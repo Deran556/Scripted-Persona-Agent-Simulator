@@ -3,11 +3,13 @@ import os
 
 load_dotenv()
 
-# API
+# API Keys
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+TEST_AGENT_API_KEY = os.getenv("TEST_AGENT_API_KEY") or GEMINI_API_KEY
 
-# Model
+# Models
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+TEST_AGENT_MODEL = os.getenv("TEST_AGENT_MODEL") or GEMINI_MODEL
 
 # Generation Config
 TEMPERATURE = float(os.getenv("TEMPERATURE", 0.7))

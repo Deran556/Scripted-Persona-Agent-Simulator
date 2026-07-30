@@ -34,3 +34,9 @@ class AgentResponse(BaseModel):
     new_patience: int = Field(description="Evaluate the pharmacist's tone. Decrease if rushed/rude, increase if empathetic. (0-100)")
     new_trust: int = Field(description="Evaluate the pharmacist's professionalism. Increase if they explain safety reasons well. (0-100)")
     new_stress: int = Field(description="Increase if the pharmacist asks too many interrogating questions without building trust. (0-100)")
+
+class EvaluationReport(BaseModel):
+    out_of_character: bool = Field(description="True if the patient acted out of character or broke persona rules.")
+    emotion_logic_score: int = Field(description="Score from 1-10 evaluating if trust and patience updated logically.")
+    unlock_turn: int = Field(description="Turn index (0..max_turns-1) when hidden info was revealed, or -1 if never unlocked.")
+    critique: str = Field(description="Detailed qualitative evaluation and feedback for the simulation.")
