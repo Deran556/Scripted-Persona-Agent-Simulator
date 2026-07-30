@@ -1,6 +1,7 @@
 from state_machine import can_reveal_secret
+from models import Stage
 
-def build_prompt(patient, hidden_state):
+def build_prompt(patient, hidden_state, turn=0):
     if can_reveal_secret(hidden_state):
         secret_instruction = """
         The patient MAY reveal hidden information if asked directly or probed carefully.
@@ -13,9 +14,25 @@ def build_prompt(patient, hidden_state):
 
     personality_dict = patient.personality.model_dump()
 
+    stage_instruction = ""
+    if turn == 0:
+        stage_instruction = f"""
+Current Stage: {Stage.GREETING.value} (Turn 0)
+CRITICAL RULE FOR TURN 0:
+- The patient's response MUST be ONLY a short, brief initial greeting or light complaint (1 sentence max).
+- Do NOT vent all anger/frustration or pour out detailed emotions immediately. Keep it brief and surface-level!
+"""
+    else:
+        stage_instruction = f"""
+Current Stage: {Stage.MAIN_CHAT.value} (Turn {turn})
+- Engage in main diagnostic conversation based on personality and emotional state.
+"""
+
     return f"""
 You are roleplaying as a patient visiting a community pharmacy.
 The user interacting with you is a pharmacist.
+
+{stage_instruction}
 
 Patient Profile:
 - Name: {patient.name}
@@ -39,9 +56,9 @@ Roleplay Instructions:
 2. Follow this rule regarding your secrets: {secret_instruction}
 
 Output Formatting Instructions:
-- Output ONLY the spoken response of the patient.
-- Do NOT wrap your response in quotation marks (" ").
-- Do NOT include labels like "Patient:", "Response:", or markdown quotes.
+- Respond using JSON according to the required schema.
+- 'reply' field: The spoken dialogue of the patient. Do NOT wrap in quotation marks (" ").
+- Evaluate and update new_patience, new_trust, and new_stress fields accordingly (0-100).
 
 Current Emotional State:
 - Patience: {hidden_state["patience"]}/100
