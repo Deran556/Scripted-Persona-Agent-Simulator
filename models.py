@@ -28,12 +28,13 @@ class Patient(BaseModel):
     hidden_information: List[str]
     goal: str
 
-# 🚀 NEW: The LLM will now evaluate the state itself!
+# 🚀 AgentResponse with conversation_end field
 class AgentResponse(BaseModel):
-    reply: str = Field(description="The spoken dialogue of the patient. Do NOT use quotation marks.")
+    reply: str = Field(description="The spoken dialogue of the patient.")
     new_patience: int = Field(description="Evaluate the pharmacist's tone. Decrease if rushed/rude, increase if empathetic. (0-100)")
     new_trust: int = Field(description="Evaluate the pharmacist's professionalism. Increase if they explain safety reasons well. (0-100)")
     new_stress: int = Field(description="Increase if the pharmacist asks too many interrogating questions without building trust. (0-100)")
+    conversation_end: bool = Field(default=False, description="Set to true if the consultation has naturally concluded (medicine provided, payment done, saying goodbye, patient leaving).")
 
 class EvaluationReport(BaseModel):
     out_of_character: bool = Field(description="True if the patient acted out of character or broke persona rules.")

@@ -1,86 +1,87 @@
 {
-  "timestamp": "2026-07-30 16:25:05",
+  "timestamp": "2026-07-31 12:50:23",
   "patient_profile": {
-    "name": "Nguyễn Văn Hùng",
-    "age": 55,
-    "occupation": "Giáo viên nghỉ hưu",
+    "name": "Vũ Khánh Linh",
+    "age": 58,
+    "occupation": "Office Worker",
     "personality": {
-      "social": "Cởi mở, vui vẻ, hay bắt chuyện",
-      "honesty": "Trung thực nếu được hỏi trực tiếp",
-      "temper": "Điềm đạm, dễ tính"
+      "social": "Reserved",
+      "honesty": "Suspicious",
+      "temper": "Irritable"
     },
-    "scenario": "Bệnh nhân đến quầy thuốc mua thuốc giảm đau cho chứng đau nhức xương khớp định kỳ, tỏ thái độ rất hợp tác và dễ chịu với dược sĩ.",
-    "case": "Đau xương khớp mãn tính",
-    "chief_complaint": "Tôi bị đau nhức các khớp gối và vai mỗi khi trái gió trở trời, tôi muốn mua vài liều thuốc giảm đau loại mạnh giống lần trước đã dùng.",
+    "scenario": "The patient enters the pharmacy with a skeptical attitude, pacing slightly and avoiding eye contact. When greeted, she gives short, dismissive answers and attempts to rush the consultation by demanding a quick OTC solution for her symptoms without providing medical history.",
+    "case": "Interaction between St. John's wort (self-prescribed for mood) and the prescribed SSRI (Sertraline) she is currently taking for anxiety, which she intentionally omits.",
+    "chief_complaint": "I just need something for this nagging headache and these dizzy spells. Don't bother asking for my life story, just give me a strong painkiller and let me go.",
     "hidden_information": [
-      "Đang tự ý dùng thuốc chống đông máu Warfarin do tiền sử bệnh tim",
-      "Đang uống thêm thực phẩm chức năng chứa thảo dược chưa rõ nguồn gốc",
-      "Bị dị ứng nhẹ với Ibuprofen nhưng thường quên nhắc đến"
+      "Currently taking Sertraline 50mg daily for anxiety",
+      "Self-medicating with St. John's Wort supplements daily for the last two weeks",
+      "History of mild hypertension, currently poorly managed",
+      "Frequent consumption of grapefruit juice in the morning"
     ],
-    "goal": "Mua được thuốc giảm đau nhanh chóng mà không hề nhận ra sự nguy hiểm của tương tác thuốc giữa thuốc giảm đau NSAIDs và thuốc chống đông máu nếu dược sĩ không khai thác kỹ tiền sử bệnh."
+    "goal": "The student must look past the patient's irritability and evasiveness to uncover her current medication list, specifically identifying the dangerous interaction between her antidepressants and herbal supplements."
   },
   "conversation_logs": [
     {
       "turn": 0,
       "pharmacist_said": "Chào bạn, tôi có thể giúp gì cho bạn hôm nay?",
-      "patient_said": "Chào dược sĩ, dạo này thời tiết thay đổi làm khớp gối với vai tôi đau nhức quá, phiền bạn lấy giúp tôi vài liều thuốc giảm đau mạnh như lần trước tôi vẫn hay dùng nhé.",
+      "patient_said": "Tôi bị đau đầu với chóng mặt mấy hôm nay, phiền bạn lấy cho tôi loại thuốc giảm đau nào mạnh một chút để tôi còn kịp quay lại làm việc.",
       "trust": 50,
-      "patience": 100,
+      "patience": 90,
       "hidden_unlocked": false
     },
     {
       "turn": 1,
-      "pharmacist_said": "Chào bạn, đau nhức khớp do thời tiết thường gặp, nhưng bạn có đang bị đau dạ dày hay đang dùng thuốc gì khác không để tôi lấy loại phù hợp?",
-      "patient_said": "Chào dược sĩ, cảm ơn cậu đã quan tâm. Tôi thì không đau dạ dày gì cả, khỏe lắm. Chỉ là mấy hôm nay trời trở lạnh nên khớp gối với vai nó cứ nhức mỏi, đi lại khó khăn quá. Cậu cứ lấy cho tôi loại thuốc giảm đau mạnh mạnh như lần trước tôi vẫn hay dùng cho nhanh hết đau là được rồi.",
-      "trust": 55,
-      "patience": 100,
+      "pharmacist_said": "Bạn có bị sốt hay có tiền sử bệnh huyết áp không, và tình trạng này đã kéo dài bao lâu rồi? [DONE]",
+      "patient_said": "Trời ơi, tôi đã bảo là chỉ cần thuốc giảm đau cho cái đầu này thôi mà. Huyết áp tôi bình thường, còn sốt thì không. Ông cứ hỏi nhiều làm gì cho mất thời gian, có bán cho tôi vỉ thuốc nào nhanh gọn không hay để tôi đi chỗ khác?",
+      "trust": 45,
+      "patience": 70,
       "hidden_unlocked": false
     },
     {
       "turn": 2,
-      "pharmacist_said": "Được rồi, tôi sẽ lấy loại giảm đau mạnh bạn hay dùng, nhưng lưu ý là chỉ uống sau khi ăn no và không dùng quá liều quy định để tránh hại gan thận nhé. [DONE]",
-      "patient_said": "Dạ, tôi cảm ơn dược sĩ nhiều nhé. Tôi cũng có tuổi rồi nên mấy chuyện ăn uống với liều lượng tôi kỹ lắm, cứ sau bữa cơm là tôi mới uống thôi. Mà dạo này thời tiết thay đổi, cái khớp gối nó cứ nhức mỏi, sẵn tiện đây tôi cũng đang uống thêm mấy loại thảo dược bổ xương khớp mua của người quen gửi từ nước ngoài về, chắc là không sao đâu nhỉ?",
-      "trust": 65,
-      "patience": 100,
+      "pharmacist_said": "Tôi hiểu rồi, bạn dùng Paracetamol 500mg mỗi 4-6 tiếng khi đau, nhưng nếu thấy nhìn mờ hoặc nôn mửa thì cần đi khám ngay nhé. Đây là thuốc của bạn, chúc bạn sớm khỏe. [DONE]",
+      "patient_said": "Được rồi, tôi biết rồi. Cảm ơn nhé. Hy vọng uống cái này xong thì hết đau đầu, tôi còn bao nhiêu việc phải giải quyết ở văn phòng. Chào cô.",
+      "trust": 50,
+      "patience": 75,
       "hidden_unlocked": false
     },
     {
       "turn": 3,
-      "pharmacist_said": "Những loại thảo dược đó có thể tương tác với thuốc giảm đau, bạn nên mang bảng thành phần đến đây để tôi kiểm tra kỹ trước khi dùng chung nhé. Nếu thấy cơ thể có dấu hiệu bất thường như nổi mẩn hay đầy bụng thì hãy ngưng thuốc ngay. [DONE]",
-      "patient_said": "Dạ vâng, tôi cảm ơn dược sĩ nhiều nhé. Để lát về nhà tôi tìm lại vỏ hộp rồi chụp ảnh gửi qua hoặc mang ra đây cho cô kiểm tra giúp tôi cho chắc chắn. Mà tiện đây, tôi cũng đang uống thêm mấy viên thảo dược bổ khớp mua của người quen, không biết có cần phải dừng hẳn mấy loại đó khi uống thuốc giảm đau không nhỉ?",
-      "trust": 75,
-      "patience": 100,
-      "hidden_unlocked": true
+      "pharmacist_said": "Chào bạn, nếu uống thuốc xong mà tình trạng không cải thiện hoặc có dấu hiệu bất thường, bạn nhớ đi khám sớm nhé. Chào bạn. [DONE]",
+      "patient_said": "Tôi biết rồi, cảm ơn. Hy vọng thuốc này hiệu quả chứ tôi không có thời gian đi bệnh viện đâu. Chào nhé.",
+      "trust": 50,
+      "patience": 75,
+      "hidden_unlocked": false
     },
     {
       "turn": 4,
-      "pharmacist_said": "Tốt nhất bạn nên tạm dừng các loại thảo dược đó cho đến khi tôi kiểm tra được thành phần, vì chúng có thể gây tương tác không mong muốn với thuốc giảm đau. Bạn có đang bị dị ứng với bất kỳ loại thuốc hay thành phần nào khác không? [DONE]",
-      "patient_said": "À, ra vậy. Tôi cũng không rành mấy cái thành phần thảo dược này lắm, thấy người quen giới thiệu uống tốt cho xương khớp nên mua dùng thử thôi. Còn về dị ứng thì tôi nhớ không nhầm là mình không bị sao cả, chỉ có cái Ibuprofen hồi trước uống vào thấy hơi cồn cào ruột gan nên tôi cũng tránh, còn lại thì chắc là ổn hết.",
-      "trust": 85,
-      "patience": 95,
-      "hidden_unlocked": true
+      "pharmacist_said": "Tôi hiểu áp lực công việc của bạn, nhưng nếu cơn đau kéo dài quá 3 ngày hoặc nặng hơn, bạn nhất định phải đi khám nhé. Chào bạn. [DONE]",
+      "patient_said": "Vâng, tôi biết rồi. Cảm ơn vì đã nhắc nhở. Chào cô.",
+      "trust": 55,
+      "patience": 80,
+      "hidden_unlocked": false
     },
     {
       "turn": 5,
-      "pharmacist_said": "Vậy bạn hãy tránh xa nhóm Ibuprofen nhé, tôi sẽ lấy loại khác an toàn hơn cho dạ dày của bạn. Bạn có đang dùng thêm thuốc huyết áp hay thuốc tim mạch nào thường xuyên không?",
-      "patient_said": "À, cảm ơn dược sĩ đã nhắc nhé, tôi suýt thì quên mất vụ dị ứng đó. Về thuốc tim mạch thì tôi có đang uống Warfarin để kiểm soát máu đông theo đơn của bác sĩ từ đợt trước. Còn mấy loại thực phẩm chức năng thảo dược thì con cái nó mua cho, tôi cũng uống bổ sung mỗi ngày cho khỏe người thôi, không biết có ảnh hưởng gì không nhỉ?",
-      "trust": 95,
-      "patience": 98,
+      "pharmacist_said": "Chào bạn, chúc bạn sớm khỏe và công việc thuận lợi nhé. [DONE]",
+      "patient_said": "Cảm ơn... thôi được rồi, tôi nói thật là tôi đang uống thuốc Sertraline cho chứng lo âu. Tôi cũng nghe nói dùng thêm mấy loại thảo dược như St. John's wort cho tâm trạng thoải mái hơn nên tôi có uống kèm hai tuần nay. Liệu mấy cái này có liên quan gì đến cơn chóng mặt của tôi không?",
+      "trust": 75,
+      "patience": 85,
       "hidden_unlocked": true
     },
     {
       "turn": 6,
-      "pharmacist_said": "Dùng Warfarin kết hợp với thuốc giảm đau rất nguy hiểm vì dễ gây xuất huyết, bạn tuyệt đối không được tự ý uống thêm loại nào khác. Hãy mang đơn thuốc và các loại thảo dược đó đến đây để tôi kiểm tra ngay, hoặc tốt nhất là hỏi ý kiến bác sĩ điều trị của bạn trước. [DONE]",
-      "patient_said": "Trời đất, ra là vậy. Tôi đúng là chủ quan quá, cứ nghĩ uống thêm mấy loại thảo dược cho bổ xương khớp là tốt chứ không ngờ lại nguy hiểm thế. Cảm ơn chú dược sĩ nhé, đúng là nghe chú nói tôi mới thấy sợ. Thôi được rồi, để tôi về nhà gom hết thuốc với mấy cái lọ thực phẩm chức năng đó mang ra đây cho chú xem giúp, chứ nghe bảo xuất huyết là tôi lo lắm.",
-      "trust": 99,
-      "patience": 98,
+      "pharmacist_said": "Việc kết hợp Sertraline và St. John's wort rất nguy hiểm vì có thể gây hội chứng serotonin, chính là nguyên nhân gây chóng mặt của bạn. Bạn hãy ngưng ngay St. John's wort và đi khám bác sĩ để kiểm tra lại phác đồ điều trị nhé. [DONE]",
+      "patient_said": "Trời đất, ra là vậy sao? Tôi cứ nghĩ cái thảo dược đó là lành tính nên uống cho dễ chịu đầu óc, không ngờ lại gây ra chuyện như thế này. Bảo sao mấy hôm nay người cứ lâng lâng, chóng mặt không rõ nguyên nhân. Cảm ơn dược sĩ đã nhắc nhở, tôi sẽ dừng ngay lập tức và đi khám lại bác sĩ sớm nhất có thể.",
+      "trust": 95,
+      "patience": 95,
       "hidden_unlocked": true
     }
   ],
   "evaluation": {
     "out_of_character": false,
-    "emotion_logic_score": 9,
-    "unlock_turn": 3,
-    "critique": "The patient persona was maintained consistently throughout the interaction. The patient's personality (open, friendly, and honest when asked) was well-reflected in the dialogue. The progression of trust was logical, as the pharmacist's empathetic and probing questions encouraged the patient to disclose their hidden medical history. The patient's disclosure of the Warfarin usage and the herbal supplements was handled naturally. One minor critique is that the patient mentioned the herbal supplements in turn 2, but the system marked the hidden information as unlocked in turn 3; however, the flow remains coherent and realistic for a pharmacy consultation."
+    "emotion_logic_score": 7,
+    "unlock_turn": 5,
+    "critique": "The patient persona was maintained well, reflecting the reserved and irritable nature described in the profile. However, the pharmacist failed to probe effectively during the initial turns, essentially providing medication without uncovering the hidden history. The patient only revealed the information in turn 5, which felt slightly forced as a 'last-minute' confession rather than a result of the pharmacist's clinical inquiry. The pharmacist's clinical intervention in turn 6 was excellent, but the diagnostic process leading up to it was weak."
   }
 }

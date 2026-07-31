@@ -7,7 +7,7 @@ from models import Stage
 current_patient = None
 
 def create_patient(difficulty=None):
-    # Khởi tạo bệnh nhân bằng AI, ngẫu nhiên hóa difficulty nếu không được truyền vào
+    # Khởi tạo bệnh nhân bằng AI với các tiêu chí ngẫu nhiên
     print("Đang tải kịch bản bệnh nhân mới...")
     return generate_dynamic_patient(difficulty=difficulty)
 
@@ -39,6 +39,8 @@ def ask_agent(user_input, turn=0):
             hidden_state["trust"] = json_data["new_trust"]
         if "new_stress" in json_data and isinstance(json_data["new_stress"], int):
             hidden_state["stress"] = json_data["new_stress"]
+        if "conversation_end" in json_data and isinstance(json_data["conversation_end"], bool):
+            hidden_state["conversation_end"] = json_data["conversation_end"]
     except Exception:
         json_data = {"reply": raw_response}
         reply = raw_response
