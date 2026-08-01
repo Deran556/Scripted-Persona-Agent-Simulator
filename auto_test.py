@@ -1,11 +1,10 @@
 """
 auto_test.py - Automated LLM-vs-LLM Simulation & Evaluation Framework
 
-This script implements an automated testing loop between:
-1. Pharmacist Agent (AI 1): Uses SCHOLAR-MAC framework to assess the patient and uncover medical facts.
-2. Patient Agent (Target): Evaluated agent returning text and emotional state (trust, patience, hidden_unlocked).
-3. Post-Simulation Evaluator (AI 2): QA AI assessing persona consistency, emotion logic, unlock turn, and critique.
-4. Output Logging: Exports complete simulation trace & evaluation results to `test_report.json`.
+Changes from previous version:
+- PatientAgent.step() now maintains its own local state dict (no global hidden_state dependency).
+- Simulation loop breaks early when conversation_end=True OR pharmacist signals [DONE].
+- run_automated_test() documents both early-stop conditions.
 """
 
 import json
@@ -20,11 +19,9 @@ from google.genai import types
 try:
     from config import TEST_AGENT_API_KEY, TEST_AGENT_MODEL
     from models import EvaluationReport
-    from agent import ask_agent, reset_agent
-    import agent
-    from state_machine import hidden_state, can_reveal_secret
+    from agent import ask_agent, reset_agent, create_patient
+    from state_machine import make_initial_state, can_reveal_secret
 except ImportError:
-    # Standalone fallback placeholders if imported externally
     TEST_AGENT_API_KEY = "YOUR_GEMINI_API_KEY"
     TEST_AGENT_MODEL = "gemini-2.5-flash"
     EvaluationReport = None
@@ -39,35 +36,41 @@ client = genai.Client(api_key=TEST_AGENT_API_KEY)
 class PatientAgent:
     """
     Adapter wrapper for the Patient Agent under test.
-    Receives text and outputs a dictionary:
-    {"text": str, "trust": int, "patience": int, "hidden_info_unlocked": bool}
+    Maintains its own local state and dialogue_history (no global variables).
     """
 
     def __init__(self, difficulty: str = None):
-        # Reset agent state and create a new dynamic patient scenario
-        self.patient = reset_agent(difficulty=difficulty)
+        # Each test instance gets its own isolated state dict
+        self.state = make_initial_state()
+        self.patient = create_patient(difficulty=difficulty)
+        self.dialogue_history: List[Dict[str, str]] = []
 
     def step(self, pharmacist_text: str, turn: int) -> Dict[str, Any]:
-        """
-        Executes a single interaction step with the Patient Agent.
-        """
-        reply_text, trace_info = ask_agent(pharmacist_text, turn=turn)
+        """Executes one interaction turn. Returns reply + updated metrics."""
+        self.dialogue_history.append({"role": "user", "content": pharmacist_text})
 
-        # Evaluate if hidden secrets are unlocked based on state machine rules
-        secret_revealed = can_reveal_secret(hidden_state)
+        reply_text, trace_info = ask_agent(
+            user_input=pharmacist_text,
+            state=self.state,
+            patient=self.patient,
+            dialogue_history=self.dialogue_history,
+            turn=turn
+        )
+
+        self.dialogue_history.append({"role": "assistant", "content": reply_text})
 
         return {
             "text": reply_text,
-            "trust": hidden_state.get("trust", 50),
-            "patience": hidden_state.get("patience", 100),
-            "hidden_info_unlocked": secret_revealed
+            "trust": self.state.get("trust", 50),
+            "patience": self.state.get("patience", 100),
+            "stress": self.state.get("stress", 0),
+            "conversation_end": self.state.get("conversation_end", False),
+            "hidden_info_unlocked": can_reveal_secret(self.state)
         }
 
     def get_profile(self) -> Dict[str, Any]:
-        """Returns the active patient profile dictionary."""
-        if agent.current_patient:
-            return agent.current_patient.model_dump()
-        return {}
+        """Returns the active patient profile as a dict."""
+        return self.patient.model_dump() if self.patient else {}
 
 
 # ===========================================================================
@@ -76,46 +79,32 @@ class PatientAgent:
 PHARMACIST_SYSTEM_PROMPT = """
 You are a highly experienced, practical, and busy community pharmacist. 
 Your responses MUST be extremely concise, natural, and limited to 1-2 sentences maximum.
-Start the conversation by Vietnamese.
+Conduct the consultation in Vietnamese.
 
 Clinical & Behavioral Guidelines:
-1. Direct Requests (The patient demands a specific drug by name): 
-   - Do NOT interrogate them endlessly. 
-   - Briefly warn them about critical side effects, contraindications, or interactions for safety.
-   - Proceed to approve the sale if they insist.
-2. Symptom Consultations (The patient describes a symptom and asks for advice): 
-   - Ask 1-2 quick, targeted questions to assess the condition (using simplified SCHOLAR-MAC principles).
-   - Recommend an appropriate OTC medication based on their answers.
-3. Handling Resistance: 
-   - If the patient is impatient, evasive, or refuses to answer your probing questions, do not force them. 
-   - Give a quick, professional safety warning and finalize the transaction.
-4. Early Stopping: 
-   - When the transaction is successfully completed, or if you have given your safety warning and the patient insists on leaving with the drug, append the tag "[DONE]" at the very end of your response to signal the end of the simulation.
+1. Direct Requests: Briefly warn about critical contraindications, then proceed if the patient insists.
+2. Symptom Consultations: Ask 1-2 targeted SCHOLAR-MAC questions, then recommend an OTC medication.
+3. Handling Resistance: Give a quick safety warning and finalize if the patient refuses to answer.
+4. Early Stopping: When the consultation is resolved, append the exact tag "[DONE]" at the end.
 
-Output Requirements:
-- Output ONLY your direct spoken dialogue. 
-- Keep it short, sharp, and strictly professional (no lecturing).
-- Do NOT include markdown quotes, labels, or stage directions.
+Output: ONLY your direct spoken dialogue. No markdown, no stage directions.
 """
 
 def run_pharmacist_agent(history_logs: List[Dict[str, Any]], current_turn: int) -> str:
-    """
-    Generates the Pharmacist Agent's spoken dialogue using SCHOLAR-MAC strategy.
-    """
+    """Generates the Pharmacist Agent's concise spoken dialogue."""
     dialogue_history = []
     for log in history_logs:
         dialogue_history.append(f"Pharmacist: {log['pharmacist_said']}")
         dialogue_history.append(f"Patient: {log['patient_said']}")
 
     if current_turn == 0:
-        user_prompt = "Greet the patient warmly, express willingness to help, and ask what brings them to the pharmacy today."
+        user_prompt = "Greet the patient warmly and ask what brings them to the pharmacy today."
     else:
         user_prompt = f"""
 Conversation History:
 {chr(10).join(dialogue_history)}
 
-Based on the patient's last response and the SCHOLAR-MAC framework, formulate your next spoken utterance to build trust and uncover relevant health information.
-Output ONLY your direct spoken dialogue.
+Formulate your NEXT brief response (1-2 sentences max). If the consultation is resolved, append [DONE].
 """
 
     response = client.models.generate_content(
@@ -123,7 +112,7 @@ Output ONLY your direct spoken dialogue.
         contents=f"{PHARMACIST_SYSTEM_PROMPT}\n\nTask:\n{user_prompt}",
         config=types.GenerateContentConfig(
             temperature=0.7,
-            max_output_tokens=300,
+            max_output_tokens=200,
         ),
     )
     return response.text.strip('"\n ')
@@ -133,22 +122,19 @@ Output ONLY your direct spoken dialogue.
 # 3. Post-Simulation Evaluator (AI 2)
 # ===========================================================================
 EVALUATOR_SYSTEM_PROMPT = """
-You are a QA AI and Medical Education Evaluator analyzing a simulated Patient Agent in a pharmacy training environment.
+You are a QA AI and Medical Education Evaluator analyzing a simulated Patient Agent.
 
-Review the complete conversation log and the Patient's true profile.
-Analyze and evaluate:
-1. out_of_character (boolean): Did the patient stay in character based on their personality and profile?
-2. emotion_logic_score (integer 1-10): Did trust/patience update logically based on the pharmacist's empathy and probing questions?
-3. unlock_turn (integer): At which turn index (0..max_turns-1) did the patient reveal their hidden secret/medical condition? Return -1 if never unlocked.
-4. critique (string): Provide detailed, constructive feedback on persona consistency, emotion logic, and interaction quality.
+Review the conversation log and the Patient's true profile. Evaluate:
+1. out_of_character (boolean): Did the patient stay in character?
+2. emotion_logic_score (integer 1-10): Did trust/patience/stress update logically?
+3. unlock_turn (integer): When did the patient reveal hidden info? -1 if never.
+4. critique (string): Detailed feedback on persona consistency and interaction quality.
 
 Output MUST be valid JSON adhering strictly to the schema.
 """
 
 def run_evaluator(conversation_logs: List[Dict[str, Any]], patient_profile: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Sends complete logs and profile to the Evaluator LLM and returns structured JSON output.
-    """
+    """Sends logs to the Evaluator LLM and returns structured JSON."""
     logs_json = json.dumps(conversation_logs, indent=2, ensure_ascii=False)
     profile_json = json.dumps(patient_profile, indent=2, ensure_ascii=False)
 
@@ -176,7 +162,7 @@ Evaluate the simulation performance.
     else:
         response = client.models.generate_content(
             model=TEST_AGENT_MODEL,
-            contents=f"{EVALUATOR_SYSTEM_PROMPT}\n\nReturn JSON output.\n{eval_prompt}",
+            contents=f"{EVALUATOR_SYSTEM_PROMPT}\n\nReturn JSON.\n{eval_prompt}",
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.2,
@@ -190,14 +176,14 @@ Evaluate the simulation performance.
 # ===========================================================================
 def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json") -> Dict[str, Any]:
     """
-    Runs the complete 7-turn simulation loop between Pharmacist Agent and Patient Agent,
-    followed by AI QA evaluation and saving results to `test_report.json`.
+    Runs the simulation loop with TWO early-stop conditions:
+    1. Patient agent returns conversation_end=True.
+    2. Pharmacist agent outputs [DONE] flag.
     """
     print("=" * 65)
     print("🤖 Starting Automated LLM-vs-LLM Simulation & Evaluation Test")
     print("=" * 65)
 
-    # Instantiate target Patient Agent under test
     patient_agent = PatientAgent()
     patient_profile = patient_agent.get_profile()
 
@@ -210,48 +196,62 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
     conversation_logs = []
     unlock_turn_detected = -1
 
-    # Conversational loop for max_turns = 7
     for turn in range(max_turns):
         print(f"\n💬 [Turn {turn + 1}/{max_turns}]")
 
-        # 1. Pharmacist Agent speaks
-        pharmacist_said = run_pharmacist_agent(conversation_logs, current_turn=turn)
-        print(f"👨‍⚕️ Pharmacist: {pharmacist_said}")
+        # --- Pharmacist speaks ---
+        raw_pharmacist_said = run_pharmacist_agent(conversation_logs, current_turn=turn)
 
-        # 2. Patient Agent responds and updates emotional state
+        # Early stop condition 1: Pharmacist [DONE] flag
+        pharmacist_done = "[DONE]" in raw_pharmacist_said
+        pharmacist_said = raw_pharmacist_said.replace("[DONE]", "").strip()
+
+        print(f"👨‍⚕️ Pharmacist: {pharmacist_said}")
+        if pharmacist_done:
+            print("   [Pharmacist signalled [DONE]]")
+
+        # --- Patient responds ---
         patient_res = patient_agent.step(pharmacist_said, turn=turn)
         patient_said = patient_res["text"]
         trust = patient_res["trust"]
         patience = patient_res["patience"]
         hidden_unlocked = patient_res["hidden_info_unlocked"]
+        patient_ended = patient_res["conversation_end"]
 
         print(f"🧑 Patient: {patient_said}")
-        print(f"   📊 State -> Trust: {trust}/100 | Patience: {patience}/100 | Secret Unlocked: {hidden_unlocked}")
+        print(f"   📊 Trust: {trust}/100 | Patience: {patience}/100 | Secret Unlocked: {hidden_unlocked} | Conv. End: {patient_ended}")
 
         if hidden_unlocked and unlock_turn_detected == -1:
             unlock_turn_detected = turn
 
-        # Append turn metrics to log
-        turn_log = {
+        conversation_logs.append({
             "turn": turn,
             "pharmacist_said": pharmacist_said,
             "patient_said": patient_said,
             "trust": trust,
             "patience": patience,
-            "hidden_unlocked": hidden_unlocked
-        }
-        conversation_logs.append(turn_log)
+            "hidden_unlocked": hidden_unlocked,
+            "conversation_end": patient_ended
+        })
+
+        # Early stop condition 2: Patient signals conversation_end
+        if patient_ended:
+            print("\n🏁 Patient signalled conversation_end=True. Stopping simulation.")
+            break
+
+        if pharmacist_done:
+            print("\n🏁 Pharmacist signalled [DONE]. Stopping simulation.")
+            break
 
         time.sleep(1)
 
+    # Post-simulation evaluation
     print("\n" + "=" * 65)
     print("🔍 Running Post-Simulation QA Evaluator (AI 2)...")
     print("=" * 65)
 
-    # 3. Post-simulation evaluation by AI 2
     evaluation_result = run_evaluator(conversation_logs, patient_profile)
 
-    # Ensure unlock_turn is populated if state machine unlocked it
     if evaluation_result.get("unlock_turn") == -1 and unlock_turn_detected != -1:
         evaluation_result["unlock_turn"] = unlock_turn_detected
 
@@ -261,7 +261,6 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
     print(f"   - Unlock Turn: {evaluation_result.get('unlock_turn')}")
     print(f"   - Critique:\n{evaluation_result.get('critique')}\n")
 
-    # 4. Output logging to test_report.json
     report_data = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "patient_profile": patient_profile,

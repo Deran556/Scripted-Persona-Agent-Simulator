@@ -28,13 +28,27 @@ class Patient(BaseModel):
     hidden_information: List[str]
     goal: str
 
-# 🚀 AgentResponse with conversation_end field
 class AgentResponse(BaseModel):
-    reply: str = Field(description="The spoken dialogue of the patient.")
-    new_patience: int = Field(description="Evaluate the pharmacist's tone. Decrease if rushed/rude, increase if empathetic. (0-100)")
-    new_trust: int = Field(description="Evaluate the pharmacist's professionalism. Increase if they explain safety reasons well. (0-100)")
-    new_stress: int = Field(description="Increase if the pharmacist asks too many interrogating questions without building trust. (0-100)")
-    conversation_end: bool = Field(default=False, description="Set to true if the consultation has naturally concluded (medicine provided, payment done, saying goodbye, patient leaving).")
+    """
+    Structured JSON output enforced by Gemini's response schema.
+    The LLM evaluates its own emotional response and signals conversation completion.
+    """
+    reply: str = Field(
+        description="The patient's spoken dialogue in the SAME language as the pharmacist's latest message."
+    )
+    new_trust: int = Field(
+        description="Updated trust score (0-100). Increase if the pharmacist is empathetic/professional, decrease if intrusive/rude."
+    )
+    new_patience: int = Field(
+        description="Updated patience score (0-100). Decrease if the pharmacist is slow, repetitive, or interrogating."
+    )
+    new_stress: int = Field(
+        description="Updated stress score (0-100). Increase if the pharmacist asks too many questions without resolving anything."
+    )
+    conversation_end: bool = Field(
+        default=False,
+        description="Set to true ONLY when the consultation has naturally concluded: medicine dispensed AND payment done AND both parties are saying goodbye."
+    )
 
 class EvaluationReport(BaseModel):
     out_of_character: bool = Field(description="True if the patient acted out of character or broke persona rules.")

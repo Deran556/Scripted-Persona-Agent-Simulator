@@ -1,63 +1,92 @@
+"""
+agent.py - Patient Agent Orchestrator
+
+Changes from previous version:
+- hidden_state is no longer a module-level global.
+- ask_agent() and reset_agent() now accept a `state` dict parameter (passed from st.session_state in app.py).
+- dialogue_history is now passed into build_prompt() for conversation memory.
+- State updates use the new LLM-driven update_state() from state_machine.py.
+- current_patient removed from global scope; managed via st.session_state in app.py.
+"""
+
 import json
-from state_machine import update_state, hidden_state, reset_state
 from prompt_builder import build_prompt
 from gemini_api import ask_gemini, generate_dynamic_patient
+from state_machine import update_state, reset_state, make_initial_state
 from models import Stage
+from typing import List, Dict, Any, Optional
 
-current_patient = None
 
-def create_patient(difficulty=None):
-    # Khởi tạo bệnh nhân bằng AI với các tiêu chí ngẫu nhiên
+def create_patient(difficulty: str = None):
+    """Generates a new dynamic patient via Gemini."""
     print("Đang tải kịch bản bệnh nhân mới...")
     return generate_dynamic_patient(difficulty=difficulty)
 
-def ask_agent(user_input, turn=0):
-    global current_patient
 
-    if current_patient is None:
-        current_patient = create_patient()
-
-    update_state(user_input)
-
+def ask_agent(
+    user_input: str,
+    state: Dict[str, Any],
+    patient,
+    dialogue_history: List[Dict[str, str]],
+    turn: int = 0
+) -> tuple[str, Dict[str, Any]]:
+    """
+    Runs one turn of the patient agent.
+    
+    Args:
+        user_input: The pharmacist's latest message.
+        state: The current hidden_state dict (from st.session_state).
+        patient: The current Patient object (from st.session_state).
+        dialogue_history: List of {role, content} dicts for memory injection.
+        turn: Current turn index.
+    
+    Returns:
+        (reply_text, trace_info): Patient's reply string and debug trace dict.
+    """
+    # Build the full system prompt with memory injected
     prompt = build_prompt(
-        current_patient,
-        hidden_state,
-        turn=turn
+        patient=patient,
+        hidden_state=state,
+        turn=turn,
+        dialogue_history=dialogue_history
     )
 
-    raw_response = ask_gemini(
-        prompt,
-        user_input
+    # Call Gemini — returns a parsed AgentResponse Pydantic object
+    agent_response = ask_gemini(prompt, user_input)
+
+    # Apply LLM-evaluated emotion scores to state (no keyword matching)
+    update_state(
+        state=state,
+        new_trust=agent_response.new_trust,
+        new_patience=agent_response.new_patience,
+        new_stress=agent_response.new_stress
     )
 
-    try:
-        json_data = json.loads(raw_response)
-        reply = json_data.get("reply", raw_response)
-        if "new_patience" in json_data and isinstance(json_data["new_patience"], int):
-            hidden_state["patience"] = json_data["new_patience"]
-        if "new_trust" in json_data and isinstance(json_data["new_trust"], int):
-            hidden_state["trust"] = json_data["new_trust"]
-        if "new_stress" in json_data and isinstance(json_data["new_stress"], int):
-            hidden_state["stress"] = json_data["new_stress"]
-        if "conversation_end" in json_data and isinstance(json_data["conversation_end"], bool):
-            hidden_state["conversation_end"] = json_data["conversation_end"]
-    except Exception:
-        json_data = {"reply": raw_response}
-        reply = raw_response
+    # Persist conversation_end flag
+    state["conversation_end"] = agent_response.conversation_end
 
+    # Build debug trace
     stage_name = Stage.GREETING.value if turn == 0 else Stage.MAIN_CHAT.value
-
     trace_info = {
         "turn": turn,
         "stage": stage_name,
         "prompt": prompt,
-        "json_response": json_data
+        "json_response": agent_response.model_dump()
     }
 
-    return reply, trace_info
+    return agent_response.reply, trace_info
 
-def reset_agent(difficulty=None):
-    global current_patient
-    reset_state()
-    current_patient = create_patient(difficulty=difficulty)
-    return current_patient
+
+def reset_agent(state: Dict[str, Any], difficulty: str = None):
+    """
+    Resets the agent state in-place and generates a new patient.
+    
+    Args:
+        state: The hidden_state dict to reset (from st.session_state).
+        difficulty: Optional difficulty string for patient generation.
+    
+    Returns:
+        The newly created Patient object.
+    """
+    reset_state(state)
+    return create_patient(difficulty=difficulty)

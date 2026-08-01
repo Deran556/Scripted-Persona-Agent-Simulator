@@ -1,3 +1,13 @@
+"""
+gemini_api.py - Gemini API Calls
+
+Changes from previous version:
+- ask_gemini() enforces strict Pydantic JSON schema via response_schema=AgentResponse.
+- Returns parsed AgentResponse object instead of raw text, giving caller direct access to
+  reply, new_trust, new_patience, new_stress, and conversation_end.
+- generate_dynamic_patient() unchanged except documentation improvements.
+"""
+
 import json
 import random
 from google import genai
@@ -14,7 +24,7 @@ from models import Patient, AgentResponse, Difficulty, Stage
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ---------------------------------------------------------------------------
-# Patient Diversity Pools (Names, Demographics, Occupations, Personalities)
+# Patient Diversity Pools
 # ---------------------------------------------------------------------------
 MALE_NAMES = [
     "Nguyễn Văn An", "Trần Minh Khoa", "Lê Hoàng Nam", "Phạm Quốc Bảo",
@@ -45,13 +55,21 @@ AGE_GROUPS = [
     (61, 80)
 ]
 
-def ask_gemini(system_prompt, user_input):
+
+def ask_gemini(system_prompt: str, user_input: str) -> AgentResponse:
+    """
+    Calls Gemini to generate a patient response, strictly enforcing AgentResponse JSON schema.
+    
+    Returns:
+        AgentResponse: Parsed Pydantic object with reply, new_trust, new_patience,
+                       new_stress, and conversation_end fields.
+    """
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=f"""
 {system_prompt}
 
-User:
+Pharmacist's latest message:
 {user_input}
 """,
         config=types.GenerateContentConfig(
@@ -62,43 +80,46 @@ User:
             top_p=TOP_P,
         ),
     )
-    return response.text.strip()
+    # Parse directly into the Pydantic model for strict validation
+    return AgentResponse.model_validate_json(response.text)
 
-def generate_dynamic_patient(difficulty=None):
+
+def generate_dynamic_patient(difficulty: str = None) -> Patient:
+    """
+    Generates a diverse, randomized patient profile.
+    Python pre-generates demographic constraints before calling Gemini to ensure diversity.
+    """
     if not difficulty:
-        difficulty_options = [d.value for d in Difficulty]
-        difficulty = random.choice(difficulty_options)
+        difficulty = random.choice([d.value for d in Difficulty])
 
-    # 🎲 Pre-generate random Python demographic constraints before calling Gemini
+    # 🎲 Pre-select diversity constraints in Python (not delegated to LLM)
     gender = random.choice(["Male", "Female"])
     selected_name = random.choice(MALE_NAMES if gender == "Male" else FEMALE_NAMES)
-    
     min_age, max_age = random.choice(AGE_GROUPS)
     selected_age = random.randint(min_age, max_age)
-    
     selected_occupation = random.choice(OCCUPATIONS)
     selected_personality = random.choice(PERSONALITY_STYLES)
 
     system_instruction = f"""
     You are a medical simulation expert designing practice scenarios for pharmacy students.
-    Generate a realistic patient profile based strictly on the following pre-determined parameters:
+    Generate a realistic patient profile based on these pre-determined parameters:
 
-    --- PRE-DETERMINED PATIENT PARAMETERS ---
+    --- PRE-DETERMINED PARAMETERS (do NOT change these) ---
     - Name: {selected_name}
     - Gender: {gender}
-    - Age: {selected_age} (Age group range: {min_age}-{max_age})
+    - Age: {selected_age} (range: {min_age}-{max_age})
     - Occupation: {selected_occupation}
     - Personality Style: {selected_personality}
-    - Scenario Difficulty: {difficulty}
+    - Difficulty: {difficulty}
 
-    Requirements & Diversity Guidelines:
-    1. Use the EXACT Name, Age, and Occupation provided above. Do NOT change them.
-    2. Generate a chief_complaint (surface symptom / initial request) appropriate for this persona and demographic.
-    3. Generate hidden_information (1-4 true medical facts/conditions/medications) that present drug interactions or health risks if the pharmacist fails to probe carefully.
-    4. Ensure high demographic diversity: generate young adults, college students, parents, office workers, manual workers, pregnant women, as well as elderly. Avoid repeatedly generating elderly patients with chronic diseases.
-    5. Design the scenario to support interaction stages: Stage 1 ({Stage.GREETING.value}) for initial greeting/complaint, and Stage 2 ({Stage.MAIN_CHAT.value}) for detailed dialogue.
+    Requirements:
+    1. Use the EXACT Name, Age, and Occupation above. Do NOT change them.
+    2. Generate a realistic chief_complaint (surface symptom/initial visit reason).
+    3. Generate 1-4 hidden_information items (true medical facts that could cause drug interactions or safety risks if missed by the pharmacist).
+    4. Vary the case type: young adults, parents, office workers, manual workers, pregnant women, elderly — NOT always elderly with chronic disease.
+    5. Design for two stages: {Stage.GREETING.value} (brief opening) and {Stage.MAIN_CHAT.value} (probing dialogue).
     """
-    
+
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=system_instruction,
@@ -108,6 +129,6 @@ def generate_dynamic_patient(difficulty=None):
             temperature=0.9,
         ),
     )
-    
+
     patient_data = json.loads(response.text)
     return Patient(**patient_data)

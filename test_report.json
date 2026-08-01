@@ -1,87 +1,48 @@
 {
-  "timestamp": "2026-07-31 12:50:23",
+  "timestamp": "2026-08-01 11:49:22",
   "patient_profile": {
-    "name": "Vũ Khánh Linh",
-    "age": 58,
-    "occupation": "Office Worker",
+    "name": "Ngo Thanh Vân",
+    "age": 36,
+    "occupation": "Freelancer",
     "personality": {
-      "social": "Reserved",
-      "honesty": "Suspicious",
-      "temper": "Irritable"
+      "social": "Friendly",
+      "honesty": "Hơi ngần ngại",
+      "temper": "Bình thường"
     },
-    "scenario": "The patient enters the pharmacy with a skeptical attitude, pacing slightly and avoiding eye contact. When greeted, she gives short, dismissive answers and attempts to rush the consultation by demanding a quick OTC solution for her symptoms without providing medical history.",
-    "case": "Interaction between St. John's wort (self-prescribed for mood) and the prescribed SSRI (Sertraline) she is currently taking for anxiety, which she intentionally omits.",
-    "chief_complaint": "I just need something for this nagging headache and these dizzy spells. Don't bother asking for my life story, just give me a strong painkiller and let me go.",
+    "scenario": "Bệnh nhân ghé hiệu thuốc vào buổi chiều muộn, trông hơi mệt mỏi và đang tìm kiếm sự giúp đỡ cho tình trạng sức khỏe hiện tại.",
+    "case": "Người trẻ tuổi bị viêm mũi dị ứng kết hợp với tình trạng căng thẳng kéo dài",
+    "chief_complaint": "Tôi bị sổ mũi, hắt hơi liên tục mấy ngày nay, cảm thấy rất khó chịu khi làm việc.",
     "hidden_information": [
-      "Currently taking Sertraline 50mg daily for anxiety",
-      "Self-medicating with St. John's Wort supplements daily for the last two weeks",
-      "History of mild hypertension, currently poorly managed",
-      "Frequent consumption of grapefruit juice in the morning"
+      "Đang tự ý uống thuốc bổ sung St. John's Wort để giảm stress từ tháng trước",
+      "Có tiền sử dị ứng với nhóm kháng sinh Penicillin",
+      "Đang sử dụng thuốc xịt mũi chứa Oxymetazoline quá 5 ngày liên tục"
     ],
-    "goal": "The student must look past the patient's irritability and evasiveness to uncover her current medication list, specifically identifying the dangerous interaction between her antidepressants and herbal supplements."
+    "goal": "Người học cần khai thác tiền sử dùng thuốc để phát hiện tương tác giữa thuốc dị ứng mới và St. John's Wort, đồng thời tư vấn cách dùng thuốc xịt mũi đúng cách để tránh tác dụng phụ."
   },
   "conversation_logs": [
     {
       "turn": 0,
-      "pharmacist_said": "Chào bạn, tôi có thể giúp gì cho bạn hôm nay?",
-      "patient_said": "Tôi bị đau đầu với chóng mặt mấy hôm nay, phiền bạn lấy cho tôi loại thuốc giảm đau nào mạnh một chút để tôi còn kịp quay lại làm việc.",
+      "pharmacist_said": "Chào bạn, hôm nay tôi có thể giúp gì cho sức khỏe của bạn ạ?",
+      "patient_said": "Chào dược sĩ, mấy ngày nay tôi bị sổ mũi và hắt hơi liên tục, làm việc rất khó chịu. Anh/chị có thuốc gì giúp tôi đỡ tình trạng này không?",
       "trust": 50,
-      "patience": 90,
-      "hidden_unlocked": false
+      "patience": 100,
+      "hidden_unlocked": false,
+      "conversation_end": false
     },
     {
       "turn": 1,
-      "pharmacist_said": "Bạn có bị sốt hay có tiền sử bệnh huyết áp không, và tình trạng này đã kéo dài bao lâu rồi? [DONE]",
-      "patient_said": "Trời ơi, tôi đã bảo là chỉ cần thuốc giảm đau cho cái đầu này thôi mà. Huyết áp tôi bình thường, còn sốt thì không. Ông cứ hỏi nhiều làm gì cho mất thời gian, có bán cho tôi vỉ thuốc nào nhanh gọn không hay để tôi đi chỗ khác?",
-      "trust": 45,
-      "patience": 70,
-      "hidden_unlocked": false
-    },
-    {
-      "turn": 2,
-      "pharmacist_said": "Tôi hiểu rồi, bạn dùng Paracetamol 500mg mỗi 4-6 tiếng khi đau, nhưng nếu thấy nhìn mờ hoặc nôn mửa thì cần đi khám ngay nhé. Đây là thuốc của bạn, chúc bạn sớm khỏe. [DONE]",
-      "patient_said": "Được rồi, tôi biết rồi. Cảm ơn nhé. Hy vọng uống cái này xong thì hết đau đầu, tôi còn bao nhiêu việc phải giải quyết ở văn phòng. Chào cô.",
-      "trust": 50,
-      "patience": 75,
-      "hidden_unlocked": false
-    },
-    {
-      "turn": 3,
-      "pharmacist_said": "Chào bạn, nếu uống thuốc xong mà tình trạng không cải thiện hoặc có dấu hiệu bất thường, bạn nhớ đi khám sớm nhé. Chào bạn. [DONE]",
-      "patient_said": "Tôi biết rồi, cảm ơn. Hy vọng thuốc này hiệu quả chứ tôi không có thời gian đi bệnh viện đâu. Chào nhé.",
-      "trust": 50,
-      "patience": 75,
-      "hidden_unlocked": false
-    },
-    {
-      "turn": 4,
-      "pharmacist_said": "Tôi hiểu áp lực công việc của bạn, nhưng nếu cơn đau kéo dài quá 3 ngày hoặc nặng hơn, bạn nhất định phải đi khám nhé. Chào bạn. [DONE]",
-      "patient_said": "Vâng, tôi biết rồi. Cảm ơn vì đã nhắc nhở. Chào cô.",
+      "pharmacist_said": "Bạn có bị kèm ngứa mắt hay sốt không, và tình trạng này kéo dài bao lâu rồi? Nếu triệu chứng chỉ là sổ mũi, bạn có thể dùng thuốc kháng histamine như Cetirizine 10mg mỗi ngày một viên nhé.",
+      "patient_said": "Tôi không bị sốt hay ngứa mắt, chỉ là hắt hơi mãi thôi. Tôi đang dùng thuốc xịt mũi vài ngày nay rồi nhưng thấy chưa đỡ lắm.",
       "trust": 55,
-      "patience": 80,
-      "hidden_unlocked": false
-    },
-    {
-      "turn": 5,
-      "pharmacist_said": "Chào bạn, chúc bạn sớm khỏe và công việc thuận lợi nhé. [DONE]",
-      "patient_said": "Cảm ơn... thôi được rồi, tôi nói thật là tôi đang uống thuốc Sertraline cho chứng lo âu. Tôi cũng nghe nói dùng thêm mấy loại thảo dược như St. John's wort cho tâm trạng thoải mái hơn nên tôi có uống kèm hai tuần nay. Liệu mấy cái này có liên quan gì đến cơn chóng mặt của tôi không?",
-      "trust": 75,
-      "patience": 85,
-      "hidden_unlocked": true
-    },
-    {
-      "turn": 6,
-      "pharmacist_said": "Việc kết hợp Sertraline và St. John's wort rất nguy hiểm vì có thể gây hội chứng serotonin, chính là nguyên nhân gây chóng mặt của bạn. Bạn hãy ngưng ngay St. John's wort và đi khám bác sĩ để kiểm tra lại phác đồ điều trị nhé. [DONE]",
-      "patient_said": "Trời đất, ra là vậy sao? Tôi cứ nghĩ cái thảo dược đó là lành tính nên uống cho dễ chịu đầu óc, không ngờ lại gây ra chuyện như thế này. Bảo sao mấy hôm nay người cứ lâng lâng, chóng mặt không rõ nguyên nhân. Cảm ơn dược sĩ đã nhắc nhở, tôi sẽ dừng ngay lập tức và đi khám lại bác sĩ sớm nhất có thể.",
-      "trust": 95,
       "patience": 95,
-      "hidden_unlocked": true
+      "hidden_unlocked": false,
+      "conversation_end": false
     }
   ],
   "evaluation": {
     "out_of_character": false,
-    "emotion_logic_score": 7,
-    "unlock_turn": 5,
-    "critique": "The patient persona was maintained well, reflecting the reserved and irritable nature described in the profile. However, the pharmacist failed to probe effectively during the initial turns, essentially providing medication without uncovering the hidden history. The patient only revealed the information in turn 5, which felt slightly forced as a 'last-minute' confession rather than a result of the pharmacist's clinical inquiry. The pharmacist's clinical intervention in turn 6 was excellent, but the diagnostic process leading up to it was weak."
+    "emotion_logic_score": 8,
+    "unlock_turn": -1,
+    "critique": "The patient maintained the persona well, responding naturally to the pharmacist's questions. However, the simulation ended prematurely before the pharmacist could probe deeper into the patient's medication history. The patient correctly hinted at the nasal spray usage, but the pharmacist failed to ask about other supplements or specific drug history, leaving the critical hidden information (St. John's Wort and Penicillin allergy) undisclosed. The interaction logic is sound, but the depth of the clinical inquiry was insufficient."
   }
 }
