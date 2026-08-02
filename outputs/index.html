@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Agent Simulation — Automated Test Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0e1117;
+      --bg-card: #161b22;
+      --bg-card-alt: #1f2937;
+      --border-color: #30363d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent-teal: #5eead4;
+      --accent-teal-glow: rgba(94, 234, 212, 0.15);
+      --accent-orange: #f0a868;
+      --accent-orange-glow: rgba(240, 168, 104, 0.15);
+      --success-green: #3fb950;
+      --warning-amber: #d29922;
+      --danger-red: #f85149;
+      --badge-bg: #21262d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* Header & Hero */
+    header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-area h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-teal), var(--accent-orange));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .title-area p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .meta-badge {
+      background: var(--badge-bg);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      color: var(--accent-teal);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* KPI Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-teal);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-teal);
+    }
+
+    .kpi-card.orange::before {
+      background: var(--accent-orange);
+    }
+
+    .kpi-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--accent-teal);
+      margin-top: 0.5rem;
+    }
+
+    /* Summary Table */
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #ffffff;
+    }
+
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 3rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody tr {
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background-color: rgba(94, 234, 212, 0.04);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .patient-name {
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .trait-tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      background: var(--badge-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      margin-right: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .status-unlocked {
+      background: var(--accent-teal-glow);
+      color: var(--accent-teal);
+      border: 1px solid rgba(94, 234, 212, 0.3);
+    }
+
+    .status-locked {
+      background: var(--accent-orange-glow);
+      color: var(--accent-orange);
+      border: 1px solid rgba(240, 168, 104, 0.3);
+    }
+
+    /* Test Case Details */
+    .test-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 2rem;
+    }
+
+    .test-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .patient-profile h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+    }
+
+    .patient-meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .complaint-box {
+      background: rgba(240, 168, 104, 0.06);
+      border: 1px dashed rgba(240, 168, 104, 0.3);
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.92rem;
+    }
+
+    .complaint-box label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent-orange);
+      margin-bottom: 0.25rem;
+    }
+
+    .hidden-info-list {
+      background: var(--bg-card-alt);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .hidden-info-list h5 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .hidden-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .hidden-item:last-child {
+      margin-bottom: 0;
+    }
+
+    /* SVG Chart */
+    .chart-box {
+      background: rgba(14, 17, 23, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .chart-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.8rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Dialogue Stream */
+    .chat-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .chat-turn {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .turn-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+
+    .bubble-pharmacist {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f1f5f9;
+      margin-right: auto;
+      border-bottom-left-radius: 2px;
+    }
+
+    .bubble-patient {
+      background: rgba(94, 234, 212, 0.08);
+      border: 1px solid rgba(94, 234, 212, 0.25);
+      color: #e2e8f0;
+      margin-left: auto;
+      border-bottom-right-radius: 2px;
+    }
+
+    .action-tag {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      margin-right: 0.35rem;
+      background: rgba(94, 234, 212, 0.2);
+      color: var(--accent-teal);
+      border: 1px solid rgba(94, 234, 212, 0.4);
+    }
+
+    .action-tag.action-done {
+      background: rgba(240, 168, 104, 0.2);
+      color: var(--accent-orange);
+      border-color: rgba(240, 168, 104, 0.4);
+    }
+
+    .turn-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.35rem;
+    }
+
+    /* Evaluation Box */
+    .eval-box {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .eval-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .eval-badges {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .critique-text {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      font-style: italic;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 0.85rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-teal);
+    }
+
+    /* PDF Print Styles */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        padding: 0 !important;
+      }
+
+      .container {
+        max-width: 100% !important;
+      }
+
+      .kpi-card,
+      .test-card,
+      .table-container,
+      .eval-box,
+      .chart-box {
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        color: #111827 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .title-area h1 {
+        -webkit-text-fill-color: #111827 !important;
+        color: #111827 !important;
+      }
+
+      th {
+        background: #f3f4f6 !important;
+        color: #374151 !important;
+      }
+
+      td,
+      .patient-name,
+      .patient-profile h3,
+      .section-title {
+        color: #111827 !important;
+      }
+
+      .bubble-pharmacist {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+
+      .bubble-patient {
+        background: #f0fdf4 !important;
+        border: 1px solid #bbf7d0 !important;
+        color: #0f172a !important;
+      }
+
+      .critique-text {
+        background: #f8fafc !important;
+        color: #334155 !important;
+        border-left: 3px solid #0d9488 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="title-area">
+        <h1>Patient Agent Simulator — Automated Test Dashboard</h1>
+        <p>Thống kê kết quả kiểm thử tự động LLM-vs-LLM cho Patient Agent (P15 Simulation)</p>
+      </div>
+      <div class="meta-badge">
+        <span>⚡ LLM Auto-Test Report</span>
+      </div>
+    </header>
+
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng kịch bản kiểm thử</div>
+        <div class="kpi-value" id="kpi-total">5</div>
+        <div class="kpi-sub">Kịch bản bệnh nhân đa dạng</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Thông tin ẩn khai thác được</div>
+        <div class="kpi-value" id="kpi-unlocked">2 / 5</div>
+        <div class="kpi-sub">Ca mở khóa thành công secret</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Điểm Cảm xúc trung bình</div>
+        <div class="kpi-value" id="kpi-score">8.2 <span style="font-size:1.2rem;color:var(--text-muted)">/10</span>
+        </div>
+        <div class="kpi-sub">Đánh giá bởi QA Evaluator</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Số lượt hội thoại trung bình</div>
+        <div class="kpi-value" id="kpi-turns">4.8</div>
+        <div class="kpi-sub">Lượt trao đổi / ca tư vấn</div>
+      </div>
+    </div>
+
+    <!-- Overview Table -->
+    <h2 class="section-title">📊 Bảng Tổng Quan Các Ca Kiểm Thử</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Bệnh nhân</th>
+            <th>Nghề nghiệp</th>
+            <th>Tính cách (Social / Honesty / Temper)</th>
+            <th>Trạng thái Secret</th>
+            <th>Số lượt</th>
+            <th>QA Score</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Detail Cards Section -->
+    <h2 class="section-title">📝 Chi Tiết Từng Ca Tư Vấn</h2>
+    <div id="details-container">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof TESTS === 'undefined') {
+        console.error('TESTS array not found in data.js');
+        return;
+      }
+
+      renderKPIs(TESTS);
+      renderTable(TESTS);
+      renderDetails(TESTS);
+    });
+
+    function renderKPIs(tests) {
+      const total = tests.length;
+      const unlockedCount = tests.filter(t => t.turns.some(turn => turn.unlocked)).length;
+      const avgScore = (tests.reduce((acc, t) => acc + (t.eval?.score || 0), 0) / total).toFixed(1);
+      const avgTurns = (tests.reduce((acc, t) => acc + t.turns.length, 0) / total).toFixed(1);
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-unlocked').textContent = `${unlockedCount} / ${total}`;
+      document.getElementById('kpi-score').innerHTML = `${avgScore} <span style="font-size:1.2rem;color:var(--text-muted)">/10</span>`;
+      document.getElementById('kpi-turns').textContent = avgTurns;
+    }
+
+    function renderTable(tests) {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = tests.map(t => {
+        const isUnlocked = t.turns.some(turn => turn.unlocked);
+        return `
+          <tr onclick="scrollToTest(${t.id})">
+            <td><strong>#${t.id}</strong></td>
+            <td>
+              <div class="patient-name">${t.name}</div>
+              <div style="font-size:0.78rem;color:var(--text-muted)">${t.age} tuổi</div>
+            </td>
+            <td>${t.occupation || 'N/A'}</td>
+            <td>
+              <span class="trait-tag">${t.personality.social}</span>
+              <span class="trait-tag">${t.personality.honesty}</span>
+              <span class="trait-tag">${t.personality.temper}</span>
+            </td>
+            <td>
+              <span class="badge-status ${isUnlocked ? 'status-unlocked' : 'status-locked'}">
+                ${isUnlocked ? '🔓 Unlocked' : '🔒 Locked'}
+              </span>
+            </td>
+            <td>${t.turns.length} turns</td>
+            <td><strong>${t.eval?.score || 'N/A'} / 10</strong></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderDetails(tests) {
+      const container = document.getElementById('details-container');
+      container.innerHTML = tests.map(t => {
+        const isUnlocked = t.turns.some(turn => turn.unlocked);
+        return `
+          <div class="test-card" id="test-card-${t.id}">
+            <div class="test-header">
+              <div class="patient-profile">
+                <h3>#${t.id}. ${t.name} (${t.age} tuổi)</h3>
+                <div class="patient-meta">
+                  <span>💼 ${t.occupation}</span>
+                  <div>
+                    <span class="trait-tag">Social: ${t.personality.social}</span>
+                    <span class="trait-tag">Honesty: ${t.personality.honesty}</span>
+                    <span class="trait-tag">Temper: ${t.personality.temper}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="badge-status ${isUnlocked ? 'status-unlocked' : 'status-locked'}" style="font-size:0.85rem">
+                ${isUnlocked ? '🔓 Secret Unlocked' : '🔒 Secret Locked'}
+              </span>
+            </div>
+
+            <!-- Complaint -->
+            <div class="complaint-box">
+              <label>Lý do đến khám (Chief Complaint):</label>
+              "${t.complaint}"
+            </div>
+
+            <!-- Hidden Info -->
+            <div class="hidden-info-list">
+              <h5>Thông tin y tế ẩn (Hidden Information):</h5>
+              ${t.hidden.map(item => `
+                <div class="hidden-item">
+                  <span>${isUnlocked ? '🔓' : '🔒'}</span>
+                  <span>${item}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-box">
+              <div class="chart-title">
+                <span>Biến thiên cảm xúc (Trust & Patience) qua từng Turn</span>
+                <div class="chart-legend">
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-teal)"></div> Trust</div>
+                  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-orange)"></div> Patience</div>
+                </div>
+              </div>
+              ${generateSVGChart(t.turns)}
+            </div>
+
+            <!-- Chat Stream -->
+            <div class="chat-stream">
+              ${t.turns.map(turn => `
+                <div class="chat-turn">
+                  <div class="turn-header">
+                    <span>Turn ${turn.t}</span>
+                    <div class="turn-stats">
+                      <span>Trust: ${turn.trust}/100</span>
+                      <span>Patience: ${turn.patience}/100</span>
+                    </div>
+                  </div>
+
+                  <!-- Pharmacist Bubble -->
+                  <div class="bubble bubble-pharmacist">
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">👨‍⚕️ Dược sĩ</div>
+                    ${formatPharmacistText(turn.pharmacist)}
+                  </div>
+
+                  <!-- Patient Bubble -->
+                  <div class="bubble bubble-patient">
+                    <div style="font-size:0.75rem;color:var(--accent-teal);margin-bottom:0.25rem;text-align:right">🧑 Bệnh nhân</div>
+                    ${turn.patient}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- QA Eval -->
+            ${t.eval ? `
+              <div class="eval-box">
+                <div class="eval-header">
+                  <span style="font-weight:700;font-size:0.95rem;color:#ffffff">🔍 Đánh giá từ QA Evaluator (AI 2)</span>
+                  <div class="eval-badges">
+                    <span class="trait-tag" style="color:${t.eval.outOfCharacter ? 'var(--danger-red)' : 'var(--success-green)'}">
+                      Persona: ${t.eval.outOfCharacter ? 'Out of Character' : 'Consistent'}
+                    </span>
+                    <span class="trait-tag" style="color:var(--accent-orange)">Score: ${t.eval.score}/10</span>
+                  </div>
+                </div>
+                <div class="critique-text">
+                  "${t.eval.critique}"
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function formatPharmacistText(text) {
+      // Highlight action tags like [GIVE_MEDICINE], [PAYMENT], [DONE]
+      return text.replace(/\[(GIVE_MEDICINE|CHECK_PRESCRIPTION|PAYMENT|DONE[^\]]*)\]/g, (match, p1) => {
+        const isDone = p1.startsWith('DONE');
+        return `<span class="action-tag ${isDone ? 'action-done' : ''}">[${p1}]</span>`;
+      });
+    }
+
+    function generateSVGChart(turns) {
+      const width = 600;
+      const height = 150;
+      const padding = 30;
+
+      const maxTurn = turns.length;
+      const xScale = (t) => padding + ((t - 1) / Math.max(maxTurn - 1, 1)) * (width - 2 * padding);
+      const yScale = (val) => height - padding - (val / 100) * (height - 2 * padding);
+
+      const trustPoints = turns.map(d => `${xScale(d.t)},${yScale(d.trust)}`).join(' ');
+      const patiencePoints = turns.map(d => `${xScale(d.t)},${yScale(d.patience)}`).join(' ');
+
+      return `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;overflow:visible">
+          <!-- Grid Lines -->
+          <line x1="${padding}" y1="${yScale(0)}" x2="${width - padding}" y2="${yScale(0)}" stroke="rgba(255,255,255,0.08)" />
+          <line x1="${padding}" y1="${yScale(50)}" x2="${width - padding}" y2="${yScale(50)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="4" />
+          <line x1="${padding}" y1="${yScale(100)}" x2="${width - padding}" y2="${yScale(100)}" stroke="rgba(255,255,255,0.08)" />
+
+          <!-- Polylines -->
+          <polyline fill="none" stroke="var(--accent-teal)" stroke-width="2.5" points="${trustPoints}" />
+          <polyline fill="none" stroke="var(--accent-orange)" stroke-width="2.5" stroke-dasharray="5 3" points="${patiencePoints}" />
+
+          <!-- Dots & Labels -->
+          ${turns.map(d => `
+            <circle cx="${xScale(d.t)}" cy="${yScale(d.trust)}" r="4" fill="var(--accent-teal)" />
+            <circle cx="${xScale(d.t)}" cy="${yScale(d.patience)}" r="4" fill="var(--accent-orange)" />
+            <text x="${xScale(d.t)}" y="${height - 8}" fill="var(--text-muted)" font-size="10" text-anchor="middle">T${d.t}</text>
+          `).join('')}
+        </svg>
+      `;
+    }
+
+    function scrollToTest(id) {
+      const el = document.getElementById(`test-card-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  </script>
+</body>
+
+</html>
