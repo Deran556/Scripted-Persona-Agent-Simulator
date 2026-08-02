@@ -83,12 +83,9 @@ with col_a1:
     if st.button("💊 Give Medicine", use_container_width=True):
         st.session_state.selected_action = "GIVE_MEDICINE"
 with col_a2:
-    if st.button("📱 Check Prescription", use_container_width=True):
-        st.session_state.selected_action = "CHECK_PRESCRIPTION"
-with col_a3:
     if st.button("💳 Payment", use_container_width=True):
         st.session_state.selected_action = "PAYMENT"
-with col_a4:
+with col_a3:
     if st.button("❌ Clear Action", use_container_width=True):
         st.session_state.selected_action = None
 

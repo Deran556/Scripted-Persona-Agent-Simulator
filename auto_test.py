@@ -45,12 +45,23 @@ class PatientAgent:
         self.patient = create_patient(difficulty=difficulty)
         self.dialogue_history: List[Dict[str, str]] = []
 
-    def step(self, pharmacist_text: str, turn: int) -> Dict[str, Any]:
-        """Executes one interaction turn. Returns reply + updated metrics."""
-        self.dialogue_history.append({"role": "user", "content": pharmacist_text})
+    def step(self, pharmacist_text: str, turn: int, action: str = "NONE") -> Dict[str, Any]:
+        """
+        Executes one interaction turn. Returns reply + updated metrics.
+
+        Mirrors app.py's behavior: when an action is selected, the message sent to the
+        patient agent is wrapped as "Action:\\n<ACTION>\\n\\nMessage:\\n<text>" instead of
+        the raw text, so the patient LLM can detect medicine dispensed / payment done.
+        """
+        if action and action != "NONE":
+            full_user_input = f"Action:\n{action}\n\nMessage:\n{pharmacist_text}"
+        else:
+            full_user_input = pharmacist_text
+
+        self.dialogue_history.append({"role": "user", "content": full_user_input})
 
         reply_text, trace_info = ask_agent(
-            user_input=pharmacist_text,
+            user_input=full_user_input,
             state=self.state,
             patient=self.patient,
             dialogue_history=self.dialogue_history,
@@ -77,34 +88,54 @@ class PatientAgent:
 # 2. Pharmacist Agent (AI 1)
 # ===========================================================================
 PHARMACIST_SYSTEM_PROMPT = """
-You are a highly experienced, practical, and busy community pharmacist. 
+You are a highly experienced, practical, and busy community pharmacist.
 Your responses MUST be extremely concise, natural, and limited to 1-2 sentences maximum.
 Conduct the consultation in Vietnamese.
 
+--- ACTION MECHANISM (mirrors the real app's UI action bar) ---
+In the real product, the pharmacist can attach ONE action tag to a message, exactly like clicking
+a button in the UI before sending a chat message. You must use this mechanism to actually progress
+and conclude the consultation — it is NOT optional flavor text, the patient agent looks for these
+exact tags to know medicine was dispensed / payment was made.
+
+Available actions (attach AT MOST ONE per turn, only when it truly applies):
+- CHECK_PRESCRIPTION: use when you need to verify what the patient is currently taking / bringing a prescription.
+- GIVE_MEDICINE: use ONLY once you have decided on and are handing over the actual medication.
+- PAYMENT: use ONLY after GIVE_MEDICINE has already happened in a previous turn, when the patient is paying and the transaction is finishing.
+- NONE: use for all normal conversational turns (asking questions, giving advice, warnings) where no physical action is happening yet.
+
+Format your output EXACTLY as:
+ACTION: <CHECK_PRESCRIPTION|GIVE_MEDICINE|PAYMENT|NONE>
+SAY: <your 1-2 sentence spoken line in Vietnamese>
+
 Clinical & Behavioral Guidelines:
 1. Direct Requests: Briefly warn about critical contraindications, then proceed if the patient insists.
-2. Symptom Consultations: Ask 1-2 targeted SCHOLAR-MAC questions, then recommend an OTC medication.
-3. Handling Resistance: Give a quick safety warning and finalize if the patient refuses to answer.
-4. Early Stopping: When the consultation is resolved, append the exact tag "[DONE]" at the end.
+2. Symptom Consultations: Ask 1-2 targeted SCHOLAR-MAC questions before recommending anything.
+3. Handling Resistance: Give a quick safety warning, but keep probing gently rather than abandoning the consultation — do not finalize just because the patient hesitates once.
+4. REQUIRED FLOW before ending: (a) gather enough history to make a safe recommendation, (b) use CHECK_PRESCRIPTION if the patient mentions other medicines/herbal remedies, (c) use GIVE_MEDICINE when you hand over the product, (d) use PAYMENT when the patient pays, (e) only THEN say goodbye.
+5. Early Stopping: Append the exact tag "[DONE]" at the end of SAY ONLY on the turn where you use the PAYMENT action AND you are also saying goodbye. Never append [DONE] before PAYMENT has happened.
 
-Output: ONLY your direct spoken dialogue. No markdown, no stage directions.
+Output ONLY the two lines above (ACTION: and SAY:). No markdown, no stage directions, no extra commentary.
 """
 
-def run_pharmacist_agent(history_logs: List[Dict[str, Any]], current_turn: int) -> str:
-    """Generates the Pharmacist Agent's concise spoken dialogue."""
+def run_pharmacist_agent(history_logs: List[Dict[str, Any]], current_turn: int) -> Dict[str, str]:
+    """Generates the Pharmacist Agent's action + concise spoken dialogue."""
     dialogue_history = []
     for log in history_logs:
-        dialogue_history.append(f"Pharmacist: {log['pharmacist_said']}")
+        action_note = f" [action: {log.get('pharmacist_action', 'NONE')}]" if log.get("pharmacist_action", "NONE") != "NONE" else ""
+        dialogue_history.append(f"Pharmacist{action_note}: {log['pharmacist_said']}")
         dialogue_history.append(f"Patient: {log['patient_said']}")
 
     if current_turn == 0:
-        user_prompt = "Greet the patient warmly and ask what brings them to the pharmacy today."
+        user_prompt = "Greet the patient warmly and ask what brings them to the pharmacy today. ACTION should be NONE."
     else:
         user_prompt = f"""
 Conversation History:
 {chr(10).join(dialogue_history)}
 
-Formulate your NEXT brief response (1-2 sentences max). If the consultation is resolved, append [DONE].
+Formulate your NEXT turn: pick the appropriate ACTION (usually NONE, until the flow calls for
+CHECK_PRESCRIPTION / GIVE_MEDICINE / PAYMENT) and a brief spoken line (1-2 sentences max).
+Only append [DONE] to SAY if this turn's ACTION is PAYMENT and you are wrapping up.
 """
 
     response = client.models.generate_content(
@@ -115,7 +146,35 @@ Formulate your NEXT brief response (1-2 sentences max). If the consultation is r
             max_output_tokens=200,
         ),
     )
-    return response.text.strip('"\n ')
+    return _parse_pharmacist_output(response.text)
+
+
+def _parse_pharmacist_output(raw_text: str) -> Dict[str, str]:
+    """
+    Parses the pharmacist LLM's 'ACTION: ...\nSAY: ...' format.
+    Falls back gracefully if the model doesn't follow the format exactly.
+    """
+    text = raw_text.strip()
+    action = "NONE"
+    say = text
+
+    lines = text.splitlines()
+    action_line = next((l for l in lines if l.strip().upper().startswith("ACTION:")), None)
+    say_line_idx = next((i for i, l in enumerate(lines) if l.strip().upper().startswith("SAY:")), None)
+
+    if action_line:
+        candidate = action_line.split(":", 1)[1].strip().upper()
+        if candidate in ("CHECK_PRESCRIPTION", "GIVE_MEDICINE", "PAYMENT", "NONE"):
+            action = candidate
+
+    if say_line_idx is not None:
+        say = "\n".join(lines[say_line_idx:]).split(":", 1)[1].strip()
+    elif action_line:
+        # ACTION present but no SAY line found; nothing else to fall back on
+        say = ""
+
+    say = say.strip('"\n ')
+    return {"action": action, "say": say}
 
 
 # ===========================================================================
@@ -174,7 +233,7 @@ Evaluate the simulation performance.
 # ===========================================================================
 # 4. Simulation Execution & Output Logging
 # ===========================================================================
-def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json") -> Dict[str, Any]:
+def run_automated_test(max_turns: int = 12, report_path: str = "test_report.json") -> Dict[str, Any]:
     """
     Runs the simulation loop with TWO early-stop conditions:
     1. Patient agent returns conversation_end=True.
@@ -189,6 +248,8 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
 
     print(f"📋 Generated Patient Profile:")
     print(f"   Name: {patient_profile.get('name', 'N/A')}")
+    print(f"   Age: {patient_profile.get('age', 'N/A')}")
+    print(f" Personality: {patient_profile.get('personality', 'N/A')}")
     print(f"   Chief Complaint: {patient_profile.get('chief_complaint', 'N/A')}")
     print(f"   Hidden Information: {patient_profile.get('hidden_information', [])}")
     print("-" * 65)
@@ -199,19 +260,25 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
     for turn in range(max_turns):
         print(f"\n💬 [Turn {turn + 1}/{max_turns}]")
 
-        # --- Pharmacist speaks ---
-        raw_pharmacist_said = run_pharmacist_agent(conversation_logs, current_turn=turn)
+        # --- Pharmacist speaks (and optionally acts) ---
+        pharmacist_turn = run_pharmacist_agent(conversation_logs, current_turn=turn)
+        pharmacist_action = pharmacist_turn["action"]
+        raw_pharmacist_said = pharmacist_turn["say"]
 
-        # Early stop condition 1: Pharmacist [DONE] flag
-        pharmacist_done = "[DONE]" in raw_pharmacist_said
+        # Early stop condition 1: Pharmacist [DONE] flag — only honored if PAYMENT actually happened
+        pharmacist_flagged_done = "[DONE]" in raw_pharmacist_said
         pharmacist_said = raw_pharmacist_said.replace("[DONE]", "").strip()
+        pharmacist_done = pharmacist_flagged_done and pharmacist_action == "PAYMENT"
 
-        print(f"👨‍⚕️ Pharmacist: {pharmacist_said}")
-        if pharmacist_done:
-            print("   [Pharmacist signalled [DONE]]")
+        action_note = f" [{pharmacist_action}]" if pharmacist_action != "NONE" else ""
+        print(f"👨‍⚕️ Pharmacist{action_note}: {pharmacist_said}")
+        if pharmacist_flagged_done and not pharmacist_done:
+            print("   [Ignored premature [DONE] — PAYMENT action not yet issued]")
+        elif pharmacist_done:
+            print("   [Pharmacist signalled [DONE] after PAYMENT]")
 
         # --- Patient responds ---
-        patient_res = patient_agent.step(pharmacist_said, turn=turn)
+        patient_res = patient_agent.step(pharmacist_said, turn=turn, action=pharmacist_action)
         patient_said = patient_res["text"]
         trust = patient_res["trust"]
         patience = patient_res["patience"]
@@ -226,12 +293,14 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
 
         conversation_logs.append({
             "turn": turn,
+            "pharmacist_action": pharmacist_action,
             "pharmacist_said": pharmacist_said,
             "patient_said": patient_said,
             "trust": trust,
             "patience": patience,
             "hidden_unlocked": hidden_unlocked,
-            "conversation_end": patient_ended
+            "conversation_end": patient_ended,
+            "premature_done_flag": pharmacist_flagged_done and not pharmacist_done
         })
 
         # Early stop condition 2: Patient signals conversation_end
@@ -239,8 +308,9 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
             print("\n🏁 Patient signalled conversation_end=True. Stopping simulation.")
             break
 
+        # Early stop condition 3: Pharmacist genuinely wrapped up (PAYMENT + [DONE])
         if pharmacist_done:
-            print("\n🏁 Pharmacist signalled [DONE]. Stopping simulation.")
+            print("\n🏁 Pharmacist completed PAYMENT and signalled [DONE]. Stopping simulation.")
             break
 
         time.sleep(1)
@@ -276,4 +346,4 @@ def run_automated_test(max_turns: int = 7, report_path: str = "test_report.json"
 
 
 if __name__ == "__main__":
-    run_automated_test(max_turns=7)
+    run_automated_test(max_turns=12)

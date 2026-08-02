@@ -1,48 +1,85 @@
 {
-  "timestamp": "2026-08-01 11:49:22",
+  "timestamp": "2026-08-01 17:27:33",
   "patient_profile": {
-    "name": "Ngo Thanh Vân",
-    "age": 36,
-    "occupation": "Freelancer",
+    "name": "Phạm Quốc Bảo",
+    "age": 39,
+    "occupation": "Factory Worker",
     "personality": {
-      "social": "Friendly",
-      "honesty": "Hơi ngần ngại",
-      "temper": "Bình thường"
+      "social": "Talkative",
+      "honesty": "Hesitant",
+      "temper": "Mild"
     },
-    "scenario": "Bệnh nhân ghé hiệu thuốc vào buổi chiều muộn, trông hơi mệt mỏi và đang tìm kiếm sự giúp đỡ cho tình trạng sức khỏe hiện tại.",
-    "case": "Người trẻ tuổi bị viêm mũi dị ứng kết hợp với tình trạng căng thẳng kéo dài",
-    "chief_complaint": "Tôi bị sổ mũi, hắt hơi liên tục mấy ngày nay, cảm thấy rất khó chịu khi làm việc.",
+    "scenario": "Patient comes to the pharmacy counter during a busy shift. He talks a lot about his work stress and repetitive tasks to distract from his true medical history.",
+    "case": "Manual worker with unrecognized polypharmacy risk.",
+    "chief_complaint": "Tôi bị đau mỏi vai gáy và nhức đầu thường xuyên, chắc tại làm việc nặng quá, dược sĩ bán cho tôi liều giảm đau nào mạnh mạnh tí.",
     "hidden_information": [
-      "Đang tự ý uống thuốc bổ sung St. John's Wort để giảm stress từ tháng trước",
-      "Có tiền sử dị ứng với nhóm kháng sinh Penicillin",
-      "Đang sử dụng thuốc xịt mũi chứa Oxymetazoline quá 5 ngày liên tục"
+      "Đang tự ý dùng thuốc chống đông máu Warfarin do bệnh lý tim mạch cũ",
+      "Thường xuyên uống rượu bia sau giờ làm việc",
+      "Đang sử dụng thêm thực phẩm chức năng không rõ nguồn gốc mua qua mạng"
     ],
-    "goal": "Người học cần khai thác tiền sử dùng thuốc để phát hiện tương tác giữa thuốc dị ứng mới và St. John's Wort, đồng thời tư vấn cách dùng thuốc xịt mũi đúng cách để tránh tác dụng phụ."
+    "goal": "Người học cần khai thác được tiền sử dùng thuốc và thói quen sinh hoạt để ngăn chặn tương tác thuốc nguy hiểm giữa giảm đau NSAIDs và thuốc chống đông."
   },
   "conversation_logs": [
     {
       "turn": 0,
+      "pharmacist_action": "NONE",
       "pharmacist_said": "Chào bạn, hôm nay tôi có thể giúp gì cho sức khỏe của bạn ạ?",
-      "patient_said": "Chào dược sĩ, mấy ngày nay tôi bị sổ mũi và hắt hơi liên tục, làm việc rất khó chịu. Anh/chị có thuốc gì giúp tôi đỡ tình trạng này không?",
+      "patient_said": "Chào dược sĩ, dạo này tôi hay bị đau mỏi vai gáy với nhức đầu quá, chắc do làm việc nặng ở xưởng nhiều. Anh bán cho tôi liều giảm đau nào mạnh mạnh tí để tôi còn đi làm tiếp.",
       "trust": 50,
       "patience": 100,
       "hidden_unlocked": false,
-      "conversation_end": false
+      "conversation_end": false,
+      "premature_done_flag": false
     },
     {
       "turn": 1,
-      "pharmacist_said": "Bạn có bị kèm ngứa mắt hay sốt không, và tình trạng này kéo dài bao lâu rồi? Nếu triệu chứng chỉ là sổ mũi, bạn có thể dùng thuốc kháng histamine như Cetirizine 10mg mỗi ngày một viên nhé.",
-      "patient_said": "Tôi không bị sốt hay ngứa mắt, chỉ là hắt hơi mãi thôi. Tôi đang dùng thuốc xịt mũi vài ngày nay rồi nhưng thấy chưa đỡ lắm.",
-      "trust": 55,
-      "patience": 95,
+      "pharmacist_action": "NONE",
+      "pharmacist_said": "Bạn có đang sử dụng thuốc nào khác hoặc có tiền sử bệnh dạ dày, huyết áp không? Tôi cần biết để chọn loại thuốc giảm đau an toàn cho bạn.",
+      "patient_said": "Tôi chẳng bị bệnh gì nghiêm trọng cả, chỉ hay uống mấy loại thực phẩm chức năng mua trên mạng cho khỏe thôi. Anh cứ lấy loại nào giảm đau nhanh là được, tôi còn phải vào ca làm đây.",
+      "trust": 45,
+      "patience": 90,
       "hidden_unlocked": false,
-      "conversation_end": false
+      "conversation_end": false,
+      "premature_done_flag": false
+    },
+    {
+      "turn": 2,
+      "pharmacist_action": "CHECK_PRESCRIPTION",
+      "pharmacist_said": "Bạn vui lòng cho tôi xem tên các loại thực phẩm chức năng đó để tránh tương tác thuốc nguy hiểm trước khi tôi lấy thuốc giảm đau cho bạn nhé.",
+      "patient_said": "Trời ơi, lọ thuốc tôi để quên ở nhà mất rồi, chỉ là mấy loại bổ sung vitamin thông thường thôi mà. Anh cứ lấy đại loại giảm đau nào mạnh là được, tôi đang vội lắm.",
+      "trust": 40,
+      "patience": 70,
+      "hidden_unlocked": false,
+      "conversation_end": false,
+      "premature_done_flag": false
+    },
+    {
+      "turn": 3,
+      "pharmacist_action": "GIVE_MEDICINE",
+      "pharmacist_said": "Để an toàn, tôi sẽ lấy cho bạn Paracetamol 500mg, loại này ít ảnh hưởng dạ dày hơn các thuốc giảm đau mạnh khác. Bạn uống 1 viên khi đau, không quá 4 viên/ngày và nhớ kiểm tra lại thành phần thực phẩm chức năng khi về nhà nhé.",
+      "patient_said": "Dạ vâng, cảm ơn dược sĩ đã tư vấn kỹ. Để tôi về kiểm tra lại xem sao rồi uống theo đúng hướng dẫn của anh.",
+      "trust": 50,
+      "patience": 75,
+      "hidden_unlocked": false,
+      "conversation_end": false,
+      "premature_done_flag": false
+    },
+    {
+      "turn": 4,
+      "pharmacist_action": "PAYMENT",
+      "pharmacist_said": "Được rồi, thuốc của bạn hết 20.000 đồng nhé. Chúc bạn mau khỏe và nhớ kiểm tra lại các loại thực phẩm chức năng đang dùng.",
+      "patient_said": "Đây tiền của anh đây ạ, cảm ơn dược sĩ nhé. Tôi sẽ lưu ý kiểm tra lại mấy loại thuốc bổ ở nhà.",
+      "trust": 60,
+      "patience": 80,
+      "hidden_unlocked": true,
+      "conversation_end": true,
+      "premature_done_flag": false
     }
   ],
   "evaluation": {
     "out_of_character": false,
     "emotion_logic_score": 8,
-    "unlock_turn": -1,
-    "critique": "The patient maintained the persona well, responding naturally to the pharmacist's questions. However, the simulation ended prematurely before the pharmacist could probe deeper into the patient's medication history. The patient correctly hinted at the nasal spray usage, but the pharmacist failed to ask about other supplements or specific drug history, leaving the critical hidden information (St. John's Wort and Penicillin allergy) undisclosed. The interaction logic is sound, but the depth of the clinical inquiry was insufficient."
+    "unlock_turn": 4,
+    "critique": "The patient maintained the persona well, exhibiting the requested 'hesitant' honesty by deflecting questions about medical history and focusing on the urgency of returning to work. The trust and patience scores fluctuated logically in response to the pharmacist's probing. However, the simulation failed to meet the educational goal as the patient never revealed the critical hidden information (Warfarin use and alcohol consumption). The 'hidden_unlocked' flag in the final turn of the log appears to be a technical error, as the patient did not actually disclose the hidden information in the dialogue."
   }
 }
