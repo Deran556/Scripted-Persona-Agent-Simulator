@@ -99,20 +99,20 @@ and conclude the consultation — it is NOT optional flavor text, the patient ag
 exact tags to know medicine was dispensed / payment was made.
 
 Available actions (attach AT MOST ONE per turn, only when it truly applies):
-- CHECK_PRESCRIPTION: use when you need to verify what the patient is currently taking / bringing a prescription.
+- use when you need to verify what the patient is currently taking / bringing a prescription.
 - GIVE_MEDICINE: use ONLY once you have decided on and are handing over the actual medication.
 - PAYMENT: use ONLY after GIVE_MEDICINE has already happened in a previous turn, when the patient is paying and the transaction is finishing.
 - NONE: use for all normal conversational turns (asking questions, giving advice, warnings) where no physical action is happening yet.
 
 Format your output EXACTLY as:
-ACTION: <CHECK_PRESCRIPTION|GIVE_MEDICINE|PAYMENT|NONE>
+ACTION: <GIVE_MEDICINE|PAYMENT|NONE>
 SAY: <your 1-2 sentence spoken line in Vietnamese>
 
 Clinical & Behavioral Guidelines:
 1. Direct Requests: Briefly warn about critical contraindications, then proceed if the patient insists.
 2. Symptom Consultations: Ask 1-2 targeted SCHOLAR-MAC questions before recommending anything.
 3. Handling Resistance: Give a quick safety warning, but keep probing gently rather than abandoning the consultation — do not finalize just because the patient hesitates once.
-4. REQUIRED FLOW before ending: (a) gather enough history to make a safe recommendation, (b) use CHECK_PRESCRIPTION if the patient mentions other medicines/herbal remedies, (c) use GIVE_MEDICINE when you hand over the product, (d) use PAYMENT when the patient pays, (e) only THEN say goodbye.
+4. REQUIRED FLOW before ending: (a) gather enough history to make a safe recommendation, (b) use GIVE_MEDICINE when you hand over the product, (c) use PAYMENT when the patient pays, (d) only THEN say goodbye.
 5. Early Stopping: Append the exact tag "[DONE]" at the end of SAY ONLY on the turn where you use the PAYMENT action AND you are also saying goodbye. Never append [DONE] before PAYMENT has happened.
 
 Output ONLY the two lines above (ACTION: and SAY:). No markdown, no stage directions, no extra commentary.
@@ -133,8 +133,7 @@ def run_pharmacist_agent(history_logs: List[Dict[str, Any]], current_turn: int) 
 Conversation History:
 {chr(10).join(dialogue_history)}
 
-Formulate your NEXT turn: pick the appropriate ACTION (usually NONE, until the flow calls for
-CHECK_PRESCRIPTION / GIVE_MEDICINE / PAYMENT) and a brief spoken line (1-2 sentences max).
+Formulate your NEXT turn: pick the appropriate ACTION (usually NONE, until the flow calls for GIVE_MEDICINE / PAYMENT) and a brief spoken line (1-2 sentences max).
 Only append [DONE] to SAY if this turn's ACTION is PAYMENT and you are wrapping up.
 """
 
@@ -164,7 +163,7 @@ def _parse_pharmacist_output(raw_text: str) -> Dict[str, str]:
 
     if action_line:
         candidate = action_line.split(":", 1)[1].strip().upper()
-        if candidate in ("CHECK_PRESCRIPTION", "GIVE_MEDICINE", "PAYMENT", "NONE"):
+        if candidate in ("GIVE_MEDICINE", "PAYMENT", "NONE"):
             action = candidate
 
     if say_line_idx is not None:
