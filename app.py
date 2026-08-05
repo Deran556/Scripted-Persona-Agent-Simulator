@@ -1,27 +1,45 @@
 """
-app.py - Streamlit UI
+app.py - Streamlit UI cho Generic Markdown Scenario Engine
 
-Session State Architecture:
-- st.session_state.hidden_state    → emotional state dict (trust, patience, stress, conversation_end)
-- st.session_state.current_patient → active Patient object
-- st.session_state.dialogue_history → list of {role, content} for LLM memory injection
-- st.session_state.messages        → list of (role, display_text) tuples for chat UI
+Giao diện Web động:
+- Tự động quét thư mục scenarios/ và hiển thị Dropdown kịch bản.
+- Hiển thị thông tin kịch bản và Hồ sơ Nhân vật được sinh ngẫu nhiên từ Data Pools.
+- Dynamic Action Bar: Tự động vẽ các nút bấm thao tác dựa trên array user_actions định nghĩa trong file .md.
+- Xử lý ngắt hội thoại: Hiển thị thông báo hoàn thành nếu conversation_end == True HOẶC số turn vượt quá max_turns.
 """
 
 import streamlit as st
-from agent import ask_agent, reset_agent, create_patient
+import os
+from scenario_loader import load_scenario_from_md, list_available_scenarios
+from agent import ask_agent, reset_agent, create_agent_persona
 from state_machine import make_initial_state
 
-st.title("Scripted Persona Agent Simulator")
+st.set_page_config(page_title="Generic Scenario Engine", page_icon="🎭", layout="wide")
+
+st.title("🎭 Generic Markdown Scenario Engine")
+st.caption("Hệ thống giả lập đa vai trò điều khiển bằng file Markdown (.md) & Gemini AI")
 
 # ---------------------------------------------------------------------------
-# Session State Initialization — all state lives here, not in globals
+# 1. Quét và Lựa chọn Kịch bản từ thư mục scenarios/
 # ---------------------------------------------------------------------------
+scenarios_map = list_available_scenarios("scenarios")
+
+if not scenarios_map:
+    st.error("⚠️ Không tìm thấy file kịch bản (.md) nào trong thư mục `scenarios/`!")
+    st.stop()
+
+# Khởi tạo Session State
+if "selected_scenario_path" not in st.session_state:
+    st.session_state.selected_scenario_path = list(scenarios_map.values())[0]
+
+if "current_scenario" not in st.session_state or st.session_state.current_scenario is None:
+    st.session_state.current_scenario = load_scenario_from_md(st.session_state.selected_scenario_path)
+
 if "hidden_state" not in st.session_state:
-    st.session_state.hidden_state = make_initial_state()
+    st.session_state.hidden_state = make_initial_state(st.session_state.current_scenario.initial_state)
 
-if "current_patient" not in st.session_state:
-    st.session_state.current_patient = None
+if "current_profile" not in st.session_state:
+    st.session_state.current_profile = None
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -35,99 +53,158 @@ if "trace_logs" not in st.session_state:
 if "selected_action" not in st.session_state:
     st.session_state.selected_action = None
 
-# Shortcut reference for readability
+# Shortcut reference
 hs = st.session_state.hidden_state
+scenario = st.session_state.current_scenario
 
-# ---------------------------------------------------------------------------
-# Sidebar — New Patient Button
-# ---------------------------------------------------------------------------
-if st.sidebar.button("New Patient Scenario"):
-    st.session_state.current_patient = reset_agent(state=st.session_state.hidden_state)
+# Sidebar: Chọn kịch bản
+st.sidebar.title("⚙️ Cấu hình Kịch bản")
+selected_name = st.sidebar.selectbox(
+    "Chọn kịch bản (.md):",
+    options=list(scenarios_map.keys()),
+    index=0
+)
+
+chosen_path = scenarios_map[selected_name]
+
+# Reset nếu người dùng chuyển kịch bản mới
+if chosen_path != st.session_state.selected_scenario_path:
+    st.session_state.selected_scenario_path = chosen_path
+    st.session_state.current_scenario = load_scenario_from_md(chosen_path)
+    scenario = st.session_state.current_scenario
+    st.session_state.hidden_state = make_initial_state(scenario.initial_state)
+    st.session_state.current_profile = create_agent_persona(scenario)
     st.session_state.messages = []
     st.session_state.dialogue_history = []
     st.session_state.trace_logs = []
     st.session_state.selected_action = None
     st.rerun()
 
-# ---------------------------------------------------------------------------
-# Sidebar — Generated Patient Profile
-# ---------------------------------------------------------------------------
+# Tạo nhân vật nếu chưa có
+if st.session_state.current_profile is None:
+    st.session_state.current_profile = create_agent_persona(scenario)
+
+# Sidebar: Nút Reset Nhân vật
+if st.sidebar.button("🔄 Reset / Sinh Nhân vật mới", use_container_width=True):
+    st.session_state.current_profile = reset_agent(st.session_state.hidden_state, scenario)
+    st.session_state.messages = []
+    st.session_state.dialogue_history = []
+    st.session_state.trace_logs = []
+    st.session_state.selected_action = None
+    st.rerun()
+
+# Sidebar: Thông tin Nhân vật & Kịch bản
 st.sidebar.markdown("---")
-st.sidebar.title("👤 Patient Profile")
-if st.session_state.current_patient:
-    pt = st.session_state.current_patient
-    st.sidebar.write(f"**Name:** {pt.name}")
-    st.sidebar.write(f"**Age:** {pt.age}")
-    st.sidebar.write(f"**Occupation:** {pt.occupation}")
-    st.sidebar.write(f"**Scenario:** {pt.scenario}")
-    st.sidebar.write(f"**Case:** {pt.case}")
-    p = pt.personality
-    st.sidebar.write(f"**Personality:** Social: `{p.social}` | Honesty: `{p.honesty}` | Temper: `{p.temper}`")
-else:
-    st.sidebar.info("Chưa có kịch bản bệnh nhân nào.")
+st.sidebar.subheader("📌 Kịch bản Hiện tại")
+st.sidebar.write(f"**Tiêu đề:** {scenario.title}")
+st.sidebar.write(f"**Vai trò Agent:** `{scenario.role}`")
+st.sidebar.write(f"**Vai trò User:** `{scenario.user_role}`")
+st.sidebar.write(f"**Max Turns:** `{scenario.completion_rules.max_turns}`")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("👤 Hồ sơ Nhân vật (Agent)")
+profile = st.session_state.current_profile
+st.sidebar.write(f"**Họ tên:** {profile.name}")
+st.sidebar.write(f"**Tuổi:** {profile.age}")
+st.sidebar.write(f"**Nghề nghiệp:** {profile.occupation}")
+st.sidebar.write(f"**Tính cách:** `{profile.personality}`")
+st.sidebar.write(f"**Yêu cầu ban đầu:** {profile.chief_complaint}")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Điểm Cảm xúc (Emotion State)")
+st.sidebar.progress(hs["trust"] / 100, text=f"Tin tưởng (Trust): {hs['trust']}/100")
+st.sidebar.progress(hs["patience"] / 100, text=f"Kiên nhẫn (Patience): {hs['patience']}/100")
+st.sidebar.progress(hs["stress"] / 100, text=f"Căng thẳng (Stress): {hs['stress']}/100")
 
 # ---------------------------------------------------------------------------
-# Render Chat History
+# 2. Hiển thị Khung Chat Lịch sử
 # ---------------------------------------------------------------------------
 for role, content in st.session_state.messages:
     with st.chat_message(role):
         st.write(content)
 
 # ---------------------------------------------------------------------------
-# Simple Action Bar
+# 3. Dynamic Action Bar (Nút bấm thao tác sinh tự động từ user_actions)
 # ---------------------------------------------------------------------------
-st.markdown("### ⚡ Pharmacist Actions")
-col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+st.markdown(f"### ⚡ Thao tác của {scenario.user_role} (Action Bar)")
 
-with col_a1:
-    if st.button("💊 Give Medicine", use_container_width=True):
-        st.session_state.selected_action = "GIVE_MEDICINE"
-with col_a2:
-    if st.button("💳 Payment", use_container_width=True):
-        st.session_state.selected_action = "PAYMENT"
-with col_a3:
-    if st.button("❌ Clear Action", use_container_width=True):
-        st.session_state.selected_action = None
+user_actions = scenario.user_actions
+if user_actions:
+    cols = st.columns(len(user_actions) + 1)
+    for idx, act in enumerate(user_actions):
+        with cols[idx]:
+            if st.button(act.label, help=act.description, use_container_width=True):
+                st.session_state.selected_action = act.action_tag
+    with cols[-1]:
+        if st.button("❌ Xóa Action", use_container_width=True):
+            st.session_state.selected_action = None
 
 if st.session_state.selected_action:
-    st.info(f"Selected Action: **{st.session_state.selected_action}** (will be attached to your next message)")
+    st.info(f"Đã chọn Thao tác: **[{st.session_state.selected_action}]** (Sẽ gắn tag vào tin nhắn tiếp theo)")
 
 # ---------------------------------------------------------------------------
-# Chat Input & Agent Invocation
+# 4. Kiểm tra Ngắt Hội thoại (Triple-Layer End Protocol)
 # ---------------------------------------------------------------------------
-message = st.chat_input("Nhập tin nhắn...")
+current_turn = len([m for m in st.session_state.messages if m[0] == "user"])
+max_turns = scenario.completion_rules.max_turns
+is_max_turn_reached = current_turn >= max_turns
+is_conv_ended = hs.get("conversation_end", False) or is_max_turn_reached
+
+if is_conv_ended:
+    st.markdown("---")
+    if is_max_turn_reached and not hs.get("conversation_end", False):
+        st.warning(f"🛑 **Cuộc hội thoại đã ngắt do chạm ngưỡng tối đa {max_turns} turns (Max Turns Limit).**")
+    else:
+        st.success("✅ **Cuộc hội thoại đã kết thúc thành công (Conversation Completed).**")
+
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("🔄 Tạo phiên mới với nhân vật mới", use_container_width=True):
+            st.session_state.current_profile = reset_agent(st.session_state.hidden_state, scenario)
+            st.session_state.messages = []
+            st.session_state.dialogue_history = []
+            st.session_state.trace_logs = []
+            st.session_state.selected_action = None
+            st.rerun()
+    with col_btn2:
+        if st.button("💬 Tiếp tục nhắn (Bỏ cờ kết thúc)", use_container_width=True):
+            hs["conversation_end"] = False
+            st.rerun()
+
+# ---------------------------------------------------------------------------
+# 5. Ô Nhập tin nhắn Chat (Chat Input)
+# ---------------------------------------------------------------------------
+message = st.chat_input("Nhập tin nhắn giao tiếp...", disabled=is_conv_ended)
 
 if message:
-    # Auto-generate patient if not yet created
-    if st.session_state.current_patient is None:
-        st.session_state.current_patient = create_patient()
-
-    turn = len([m for m in st.session_state.messages if m[0] == "user"])
-
-    # Combine action tag with message if an action was selected
+    # Xử lý gắn tag Action
     if st.session_state.selected_action:
         user_display_text = f"[{st.session_state.selected_action}] {message}"
-        full_user_input = f"Action:\n{st.session_state.selected_action}\n\nMessage:\n{message}"
+        full_user_input = f"Action Tag: [{st.session_state.selected_action}]\n\nMessage:\n{message}"
         st.session_state.selected_action = None
     else:
         user_display_text = message
         full_user_input = message
 
+    # Hiển thị và lưu tin nhắn User
     with st.chat_message("user"):
         st.write(user_display_text)
 
     st.session_state.messages.append(("user", user_display_text))
     st.session_state.dialogue_history.append({"role": "user", "content": full_user_input})
 
-    # Call patient agent with session state
-    reply, trace_info = ask_agent(
-        user_input=full_user_input,
-        state=st.session_state.hidden_state,
-        patient=st.session_state.current_patient,
-        dialogue_history=st.session_state.dialogue_history,
-        turn=turn
-    )
+    # Gọi Agent xử lý
+    with st.spinner(f"_{profile.name}_ đang suy nghĩ..."):
+        reply, trace_info = ask_agent(
+            user_input=full_user_input,
+            state=st.session_state.hidden_state,
+            scenario=scenario,
+            character_profile=profile,
+            dialogue_history=st.session_state.dialogue_history,
+            turn=current_turn
+        )
 
+    # Hiển thị và lưu tin nhắn Assistant
     with st.chat_message("assistant"):
         st.write(reply)
 
@@ -137,74 +214,22 @@ if message:
     st.rerun()
 
 # ---------------------------------------------------------------------------
-# Conversation Completed Card
+# 6. Sidebar Expander: Debriefing (Sự thật ẩn) & Developer Logs
 # ---------------------------------------------------------------------------
-if hs.get("conversation_end", False):
-    st.markdown("---")
-    st.success("✅ **Consultation Completed**\n\nThe patient has left the pharmacy.")
-    btn_col1, btn_col2 = st.columns(2)
+with st.sidebar.expander("🕵️ Xem Sự thật ẩn (Debriefing)"):
+    st.write("**Mục tiêu cốt lõi:**", profile.goal)
+    st.write("**Sự thật / Bí mật ẩn:**")
+    for s in profile.hidden_secrets:
+        st.write(f"- {s}")
 
-    with btn_col1:
-        if st.button("🔄 Continue Chat", use_container_width=True):
-            hs["conversation_end"] = False
-            followup_msg = "Dược sĩ ơi, cho tôi hỏi thêm một câu nữa được không?"
-            st.session_state.messages.append(("user", "(The patient turned around to ask one more question)"))
-            st.session_state.dialogue_history.append({"role": "user", "content": followup_msg})
-            turn = len([m for m in st.session_state.messages if m[0] == "user"])
-            reply, trace_info = ask_agent(
-                user_input=followup_msg,
-                state=st.session_state.hidden_state,
-                patient=st.session_state.current_patient,
-                dialogue_history=st.session_state.dialogue_history,
-                turn=turn
-            )
-            st.session_state.messages.append(("assistant", reply))
-            st.session_state.dialogue_history.append({"role": "assistant", "content": reply})
-            st.session_state.trace_logs.append(trace_info)
-            st.rerun()
-
-    with btn_col2:
-        if st.button("👤 New Patient", use_container_width=True):
-            st.session_state.current_patient = reset_agent(state=st.session_state.hidden_state)
-            st.session_state.messages = []
-            st.session_state.dialogue_history = []
-            st.session_state.trace_logs = []
-            st.session_state.selected_action = None
-            st.rerun()
-
-# ---------------------------------------------------------------------------
-# Sidebar — Emotion State & Conversation Status
-# ---------------------------------------------------------------------------
-st.sidebar.markdown("---")
-st.sidebar.title("Patient Emotion State")
-st.sidebar.write({
-    "patience": hs["patience"],
-    "trust": hs["trust"],
-    "stress": hs["stress"]
-})
-
-status_str = "ENDED" if hs.get("conversation_end", False) else "ACTIVE"
-st.sidebar.markdown(f"**Conversation Status:** `{status_str}`")
-
-# Sidebar — Debriefing
-with st.sidebar.expander("🕵️ Reveal Hidden Medical Facts (Debriefing)"):
-    if st.session_state.current_patient:
-        pt = st.session_state.current_patient
-        st.write("**Chief Complaint:**", pt.chief_complaint)
-        st.write("**Hidden Information:**", pt.hidden_information)
-        st.write("**Goal:**", pt.goal)
-    else:
-        st.write("Start a conversation to generate a patient.")
-
-# Main — Developer Logs & Prompt Trace
 with st.expander("🛠️ Developer Logs & Prompt Trace"):
     if st.session_state.trace_logs:
         for log in st.session_state.trace_logs:
             st.markdown(f"### 📍 Turn {log['turn']} - Stage: `{log['stage']}`")
-            st.markdown("**Prompt Sent to Model:**")
+            st.markdown("**System Prompt gửi tới Gemini:**")
             st.code(log["prompt"], language="markdown")
-            st.markdown("**JSON Returned from Model:**")
+            st.markdown("**Structured Output JSON nhận từ Gemini:**")
             st.json(log["json_response"])
             st.divider()
     else:
-        st.info("Chưa có log dữ liệu. Hãy nhắn tin để xem trace prompt và JSON.")
+        st.info("Chưa có thông tin trace log. Gửi tin nhắn để bắt đầu xem prompt.")

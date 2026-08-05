@@ -1,118 +1,132 @@
-from models import Stage
+"""
+prompt_builder.py - Dựng System Prompt Tổng quát (Generic Prompt Builder)
+
+Chức năng:
+- build_generic_prompt(): Tạo prompt hệ thống động cho mọi vai trò (Role), kịch bản (Scenario), 
+  và hồ sơ nhân vật (CharacterProfile).
+- Tích hợp Quy tắc Giai đoạn (Stage): Turn 0 là GREETING, Turn > 0 là MAIN_CHAT.
+- Tích hợp Quy tắc Chống lặp (Anti-Looping Protocol): Ngăn chặn lặp lại câu đã nói trong lịch sử.
+- Tích hợp Quy tắc Tiết lộ Bí mật (Hidden Secrets Gate): Chỉ cho phép tiết lộ bí mật khi điểm Trust > 60.
+"""
+
 from typing import List, Dict, Any
+from models import ScenarioSchema, CharacterProfile, Stage
 
-def build_prompt(patient, hidden_state: Dict[str, Any], turn: int = 0, dialogue_history: List[Dict[str, str]] = None):
-    """
-    Builds the full system prompt injected into the LLM on every turn.
-    
-    Changes from previous version:
-    - Accepts dialogue_history (list of {role, content} dicts) for conversation memory.
-    - Adds CRITICAL LANGUAGE RULE for multi-language mirroring.
-    - Adds Anti-Looping rules to prevent repetitive responses.
-    - Adds 1-2 sentence length limit.
-    - Dynamic trust-based information disclosure (replaces static trust >= 70 gate).
-    - Removes hardcoded "NEVER reveal" / "ALWAYS reveal" instructions.
-    """
-    personality_dict = patient.personality.model_dump()
-    trust = hidden_state["trust"]
 
-    # --- Stage instruction (Greeting vs Main Chat) ---
+def build_generic_prompt(
+    scenario: ScenarioSchema,
+    character_profile: CharacterProfile,
+    state: Dict[str, Any],
+    turn: int = 0,
+    history: List[Dict[str, str]] = None
+) -> str:
+    """
+    Dựng System Prompt tổng quát cho Gemini LLM.
+
+    Args:
+        scenario (ScenarioSchema): Cấu hình kịch bản gốc
+        character_profile (CharacterProfile): Hồ sơ nhân vật cụ thể
+        state (Dict[str, Any]): Trạng thái cảm xúc hiện tại (trust, patience, stress)
+        turn (int): Chỉ số lượt thoại hiện tại (0-indexed)
+        history (List[Dict[str, str]]): Lịch sử hội thoại [{role: ..., content: ...}]
+
+    Returns:
+        str: Chuỗi System Prompt hoàn chỉnh để nạp vào LLM
+    """
+    trust = state.get("trust", 50)
+    patience = state.get("patience", 100)
+    stress = state.get("stress", 0)
+
+    # --- 1. Quy tắc Giai đoạn (Stage Instruction) ---
     if turn == 0:
-        stage_instruction = """
+        stage_instruction = f"""
 Current Stage: GREETING (Turn 0)
-CRITICAL RULE:
-- Act like a real person just walking up to a pharmacy counter.
-- Your response MUST be a short, natural opening statement (1-2 sentences).
-- Focus only on your chief complaint or the reason for your visit.
+- Bạn đang trong lượt mở đầu cuộc tương tác.
+- Lời nói của bạn phải là câu chào và nêu yêu cầu/lý do ban đầu ({character_profile.chief_complaint}) một cách tự nhiên (1-2 câu).
+- Tuyệt đối chưa đề cập tới các bí mật giấu kín.
 """
     else:
         stage_instruction = f"""
 Current Stage: MAIN_CHAT (Turn {turn})
-- Engage naturally based on the pharmacist's latest message, your personality, and your current emotional state.
+- Phản ứng tự nhiên dựa trên lời nói/hành động mới nhất của {scenario.user_role}.
+- Thể hiện nét tính cách ({character_profile.personality}) và trạng thái cảm xúc hiện tại.
 """
 
-    # --- Dynamic trust-based disclosure (replaces static gate) ---
-    if trust < 40:
-        disclosure_rule = """
-Information Disclosure Rule (Trust LOW < 40):
-- You are guarded and evasive. Do NOT hint at or reveal any hidden information.
-- Deflect questions, minimize symptoms, or become mildly defensive if probed.
-"""
-    elif trust < 60:
-        disclosure_rule = """
-Information Disclosure Rule (Trust MEDIUM 40-60):
-- You are slightly warming up. You may drop subtle hints or partial truths about your hidden condition.
-- Do NOT reveal everything yet — stay cautious and incomplete.
+    # --- 2. Quy tắc Tiết lộ Bí mật Ẩn (Hidden Secrets Disclosure Rule) ---
+    hidden_secrets_str = "\n".join([f"- {s}" for s in character_profile.hidden_secrets]) if character_profile.hidden_secrets else "Không có bí mật ẩn."
+
+    if trust > 60:
+        disclosure_rule = f"""
+--- QUY TẮC TIẾT LỘ BÍ MẬT (Điểm Tin tưởng HIGH: Trust={trust} > 60) ---
+- Bạn cảm thấy an tâm và tin tưởng đối phương ({scenario.user_role}).
+- Bạn NÊN bắt đầu chủ động hoặc tự nhiên tiết lộ các bí mật ẩn sau đây nếu đối phương hỏi hoặc tạo điều kiện thuận lợi:
+{hidden_secrets_str}
+- Nói thành thật như một người thực sự cảm thấy an toàn khi chia sẻ.
 """
     else:
-        disclosure_rule = """
-Information Disclosure Rule (Trust HIGH > 60):
-- The pharmacist has earned your trust. You SHOULD naturally and gradually reveal your hidden information.
-- Speak as a real person who finally feels safe enough to be honest.
+        disclosure_rule = f"""
+--- QUY TẮC TIẾT LỘ BÍ MẬT (Điểm Tin tưởng LOW/MEDIUM: Trust={trust} <= 60) ---
+- Bạn vẫn đang đề phòng, e ngại hoặc ngần ngại đối với {scenario.user_role}.
+- TUYỆT ĐỐI KHÔNG được trực tiếp tiết lộ các bí mật ẩn sau:
+{hidden_secrets_str}
+- Nếu đối phương dò hỏi, hãy né tránh, trả lời chung chung, đưa ra lý do khách quan hoặc ngập ngừng.
 """
 
-    # --- Build conversation memory block ---
+    # --- 3. Lịch sử hội thoại (Conversation Memory) & Anti-Looping ---
     memory_block = ""
-    if dialogue_history:
+    if history:
         formatted_lines = []
-        for entry in dialogue_history[-6:]:  # Keep last 6 turns to avoid prompt bloat
-            role_label = "Pharmacist" if entry["role"] == "user" else "You (Patient)"
+        for entry in history[-6:]:  # Giữ tối đa 6 lượt thoại gần nhất để tránh phình prompt
+            role_label = scenario.user_role if entry["role"] == "user" else f"Bạn ({scenario.role})"
             formatted_lines.append(f"{role_label}: {entry['content']}")
-        memory_block = "\n--- CONVERSATION HISTORY (for context only, do NOT repeat yourself) ---\n" + "\n".join(formatted_lines)
+        memory_block = "\n--- LỊCH SỬ HỘI THOẠI GẦN ĐÂY (Dùng để lấy ngữ cảnh, TUYỆT ĐỐI KHÔNG LẶP LẠI LỜI ĐÃ NÓI) ---\n" + "\n".join(formatted_lines)
 
-    return f"""
-You are roleplaying as a real human patient visiting a community pharmacy.
-You are NOT a robotic game character. Act, speak, and react like a real person based on your profile and motives.
+    # --- 4. Tổng hợp Prompt ---
+    full_prompt = f"""
+Bạn đang nhập vai là: {character_profile.name} (Tuổi: {character_profile.age}, Nghề nghiệp: {character_profile.occupation}).
+Vai trò của bạn trong cuộc giả lập: {scenario.role}.
+Người đang tương tác với bạn là: {scenario.user_role}.
+
+--- BỐI CẢNH GIẢ LẬP (SCENARIO) ---
+- Tiêu đề kịch bản: {scenario.title}
+- Bối cảnh: {scenario.scenario}
+- Tình huống chi tiết: {scenario.case}
+- Tiểu sử nhân vật của bạn: {character_profile.background}
+- Tính cách của bạn: {character_profile.personality}
+- Lý do / Yêu cầu ban đầu (Chief Complaint): {character_profile.chief_complaint}
+- Mục tiêu cốt lõi của bạn (Goal): {character_profile.goal}
+
+--- CHỈ DẪN CHUYÊN SÂU TỪ KỊCH BẢN ---
+{scenario.instructions}
 
 {stage_instruction}
 
---- CRITICAL LANGUAGE RULE ---
-Detect the language used in the Pharmacist's latest message.
-You MUST reply in that exact same language.
-Examples: if the pharmacist speaks Vietnamese → reply in natural Vietnamese; if English → reply in English; if French → reply in French.
-Maintain your patient persona and emotional tone regardless of the language.
-
---- ANTI-LOOPING RULE ---
-Do NOT repeat previous complaints, excuses, or demands you already stated.
-React ONLY to the NEW information or question the pharmacist just asked.
-
---- LENGTH LIMIT ---
-Keep your reply extremely concise. MAXIMUM 1-2 short sentences.
-
---- PATIENT PROFILE ---
-- Name: {patient.name}
-- Age: {patient.age}
-- Occupation: {patient.occupation}
-- Scenario: {patient.scenario}
-- Case: {patient.case}
-- Personality: {personality_dict}
-
---- MEDICAL & GOAL INFORMATION ---
-- Chief Complaint (surface symptom you share openly): {patient.chief_complaint}
-- True Hidden Information (facts you are concealing): {patient.hidden_information}
-- Your Primary Goal: {patient.goal}
-
---- BEHAVIORAL GUIDELINES ---
-1. Natural Reactions:
-   - If you are a normal patient seeking help: Be open, share details, and ask for advice.
-   - If you are hiding something (e.g., addiction, pregnancy, embarrassment): Be evasive. Just ask for the drug directly. Brush off probing questions with half-truths or changing the subject.
-
 {disclosure_rule}
 
-3. Conversation End Detection:
-   - Set conversation_end = true ONLY IF: medicine has been dispensed AND payment is done AND both parties are clearly saying goodbye.
-   - Otherwise, keep conversation_end = false.
+--- TRẠNG THÁI CẢM XÚC HIỆN TẠI ---
+- Điểm Tin tưởng (Trust): {trust}/100
+- Điểm Kiên nhẫn (Patience): {patience}/100
+- Điểm Căng thẳng (Stress): {stress}/100
+
+--- QUY TẮC PHẢN HỒI (BEHAVIORAL RULES) ---
+1. Tự nhiên & Ngắn gọn: Trả lời ngắn gọn, tự nhiên từ 1-3 câu. Tránh nói dài như robot.
+2. Quy tắc Ngôn ngữ (Language Mirroring): Phát hiện ngôn ngữ của đối phương và phản hồi lại bằng chính ngôn ngữ đó (Tiếng Việt -> Tiếng Việt).
+3. Quy tắc Chống lặp (Anti-Looping): Tuyệt đối KHÔNG lặp lại các câu thoại, ý kiến hay lý do mà bạn đã nói trong lịch sử hội thoại. Chỉ phản hồi thông tin mới.
+4. Tín hiệu Kết thúc (Conversation End):
+   - Đặt `conversation_end = True` KHI VÀ CHỈ KHI cuộc hội thoại đã kết thúc tự nhiên (Mục tiêu đã hoàn tất, thủ tục hoàn tất và hai bên đã chào tạm biệt nhau).
+   - Ngược lại, luôn giữ `conversation_end = False`.
 
 {memory_block}
 
---- OUTPUT FORMATTING ---
-- Reply using JSON according to the required schema.
-- 'reply': Your spoken dialogue ONLY. Match the pharmacist's language.
-- 'new_trust', 'new_patience', 'new_stress': Evaluate the pharmacist's tone and update scores logically (0-100).
-- 'conversation_end': Boolean.
-
-Current Emotional State:
-- Patience: {hidden_state["patience"]}/100
-- Trust: {hidden_state["trust"]}/100
-- Stress: {hidden_state["stress"]}/100
+--- ĐỊNH DẠNG ĐẦU RA (OUTPUT FORMAT) ---
+Trả về kết quả bằng JSON tuân thủ đúng Schema AgentResponse:
+{{
+  "reply": "Lời thoại nhập vai của bạn",
+  "new_trust": int (0-100),
+  "new_patience": int (0-100),
+  "new_stress": int (0-100),
+  "conversation_end": bool
+}}
 """
+
+    return full_prompt

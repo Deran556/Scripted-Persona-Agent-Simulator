@@ -1,11 +1,11 @@
 """
-gemini_api.py - Gemini API Calls
+gemini_api.py - Động cơ sinh nhân vật & Gọi Gemini API với Structured Output
 
-Changes from previous version:
-- ask_gemini() enforces strict Pydantic JSON schema via response_schema=AgentResponse.
-- Returns parsed AgentResponse object instead of raw text, giving caller direct access to
-  reply, new_trust, new_patience, new_stress, and conversation_end.
-- generate_dynamic_patient() unchanged except documentation improvements.
+Chức năng:
+- generate_dynamic_persona(scenario: ScenarioSchema): Bốc ngẫu nhiên thông số từ scenario.dynamic_pools 
+  (Tên, Tuổi, Nghề nghiệp, Tính cách) và dùng Gemini API để tạo CharacterProfile chi tiết.
+- ask_gemini(system_prompt, user_input): Gửi prompt tới Gemini API và nhận phản hồi cấu trúc 
+  chuẩn Pydantic AgentResponse (reply, new_trust, new_patience, new_stress, conversation_end).
 """
 
 import json
@@ -19,57 +19,108 @@ from config import (
     MAX_OUTPUT_TOKENS,
     TOP_P,
 )
-from models import Patient, AgentResponse, Difficulty, Stage
+from models import ScenarioSchema, CharacterProfile, AgentResponse
 
+# Khởi tạo Google GenAI Client
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# ---------------------------------------------------------------------------
-# Patient Diversity Pools
-# ---------------------------------------------------------------------------
-MALE_NAMES = [
-    "Nguyễn Văn An", "Trần Minh Khoa", "Lê Hoàng Nam", "Phạm Quốc Bảo",
-    "Vũ Đức Thắng", "Đặng Tuấn Anh", "Bùi Huy Hoàng", "Đỗ Thanh Tùng",
-    "Phan Việt Cường", "Ngo Thành Long"
-]
 
-FEMALE_NAMES = [
-    "Nguyễn Thị Mai", "Trần Thu Hà", "Lê Phương Thảo", "Phạm Bích Ngọc",
-    "Vũ Khánh Linh", "Đặng Hương Giang", "Bùi Anh Thư", "Đỗ Hải Yến",
-    "Phan Như Quỳnh", "Ngo Thanh Vân"
-]
+def generate_dynamic_persona(scenario: ScenarioSchema) -> CharacterProfile:
+    """
+    Bốc ngẫu nhiên các yếu tố từ scenario.dynamic_pools và yêu cầu Gemini API 
+    sinh ra một Profile nhân vật hoàn chỉnh (CharacterProfile).
 
-OCCUPATIONS = [
-    "Student", "Teacher", "Office Worker", "Engineer", "Driver",
-    "Chef", "Factory Worker", "Farmer", "Salesperson", "Programmer",
-    "Accountant", "Freelancer", "Retired", "Construction Worker", "Nurse"
-]
+    Args:
+        scenario (ScenarioSchema): Kịch bản generic đã nạp
 
-PERSONALITY_STYLES = [
-    "Friendly", "Reserved", "Anxious", "Suspicious", "Impatient", "Talkative", "Confident"
-]
+    Returns:
+        CharacterProfile: Hồ sơ nhân vật chi tiết được tạo tự động
+    """
+    pools = scenario.dynamic_pools
 
-AGE_GROUPS = [
-    (18, 30),
-    (31, 45),
-    (46, 60),
-    (61, 80)
-]
+    # 🎲 Bốc ngẫu nhiên các tham số từ dynamic_pools của kịch bản
+    names = pools.names if pools.names else ["Nguyễn Văn A", "Trần Thị B"]
+    occupations = pools.occupations if pools.occupations else ["Sinh viên", "Kỹ sư"]
+    personalities = pools.personalities if pools.personalities else ["Bình tĩnh, tự tin"]
+    age_ranges = pools.age_ranges if pools.age_ranges else [[18, 25]]
+
+    selected_name = random.choice(names)
+    selected_occupation = random.choice(occupations)
+    selected_personality = random.choice(personalities)
+    
+    selected_range = random.choice(age_ranges)
+    min_age = selected_range[0] if len(selected_range) > 0 else 18
+    max_age = selected_range[1] if len(selected_range) > 1 else min_age + 5
+    selected_age = random.randint(min_age, max_age)
+
+    # Prompt yêu cầu Gemini đóng vai chuyên gia tạo nhân vật
+    prompt_instruction = f"""
+    Bạn là một chuyên gia thiết kế kịch bản mô phỏng tương tác nhân vật.
+    Hãy tạo một hồ sơ nhân vật (CharacterProfile) chi tiết dựa trên các tham số đã bốc ngẫu nhiên sau:
+
+    --- THAM SỐ CỐ ĐỊNH (BẮT BUỘC GIỮ NGUYÊN) ---
+    - Tên: {selected_name}
+    - Tuổi: {selected_age} (Khoảng: {min_age}-{max_age})
+    - Nghề nghiệp: {selected_occupation}
+    - Nét tính cách chủ đạo: {selected_personality}
+
+    --- THÔNG TIN KỊCH BẢN VÀ VAI TRÒ ---
+    - Vai trò nhân vật: {scenario.role}
+    - Bối cảnh chung: {scenario.scenario}
+    - Chi tiết ca: {scenario.case}
+    - Lý do công khai ban đầu (chief_complaint): {scenario.chief_complaint}
+    - Danh sách bí mật ẩn (hidden_secrets): {scenario.hidden_secrets}
+    - Mục tiêu cốt lõi (goal): {scenario.goal}
+
+    Yêu cầu:
+    1. Giữ nguyên Tên, Tuổi, Nghề nghiệp và Tính cách cố định ở trên.
+    2. Viết tiểu sử (background) ngắn gọn (2-3 câu) phù hợp với bối cảnh kịch bản.
+    3. Trả về đúng định dạng JSON theo Schema CharacterProfile.
+    """
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt_instruction,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=CharacterProfile,
+            temperature=0.85,
+        ),
+    )
+
+    # Validate và khởi tạo mô hình Pydantic từ kết quả JSON
+    persona_data = json.loads(response.text)
+    persona = CharacterProfile(**persona_data)
+    
+    # Đảm bảo các thuộc tính gốc từ Scenario được lưu giữ đầy đủ
+    if not persona.chief_complaint:
+        persona.chief_complaint = scenario.chief_complaint
+    if not persona.hidden_secrets:
+        persona.hidden_secrets = scenario.hidden_secrets
+    if not persona.goal:
+        persona.goal = scenario.goal
+
+    return persona
 
 
 def ask_gemini(system_prompt: str, user_input: str) -> AgentResponse:
     """
-    Calls Gemini to generate a patient response, strictly enforcing AgentResponse JSON schema.
-    
+    Gửi System Prompt và tin nhắn người dùng tới Gemini API.
+    Bắt buộc Gemini trả về Structured JSON tuân thủ AgentResponse Schema.
+
+    Args:
+        system_prompt (str): Prompt hệ thống đã dựng (chứa bối cảnh, luật lệ)
+        user_input (str): Tin nhắn hoặc hành động mới nhất của User/Tester
+
     Returns:
-        AgentResponse: Parsed Pydantic object with reply, new_trust, new_patience,
-                       new_stress, and conversation_end fields.
+        AgentResponse: Đối tượng AgentResponse chứa reply, new_trust, new_patience, new_stress, conversation_end
     """
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=f"""
 {system_prompt}
 
-Pharmacist's latest message:
+Tin nhắn/Hành động mới nhất từ đối phương:
 {user_input}
 """,
         config=types.GenerateContentConfig(
@@ -80,55 +131,5 @@ Pharmacist's latest message:
             top_p=TOP_P,
         ),
     )
-    # Parse directly into the Pydantic model for strict validation
+
     return AgentResponse.model_validate_json(response.text)
-
-
-def generate_dynamic_patient(difficulty: str = None) -> Patient:
-    """
-    Generates a diverse, randomized patient profile.
-    Python pre-generates demographic constraints before calling Gemini to ensure diversity.
-    """
-    if not difficulty:
-        difficulty = random.choice([d.value for d in Difficulty])
-
-    # 🎲 Pre-select diversity constraints in Python (not delegated to LLM)
-    gender = random.choice(["Male", "Female"])
-    selected_name = random.choice(MALE_NAMES if gender == "Male" else FEMALE_NAMES)
-    min_age, max_age = random.choice(AGE_GROUPS)
-    selected_age = random.randint(min_age, max_age)
-    selected_occupation = random.choice(OCCUPATIONS)
-    selected_personality = random.choice(PERSONALITY_STYLES)
-
-    system_instruction = f"""
-    You are a medical simulation expert designing practice scenarios for pharmacy students.
-    Generate a realistic patient profile based on these pre-determined parameters:
-
-    --- PRE-DETERMINED PARAMETERS (do NOT change these) ---
-    - Name: {selected_name}
-    - Gender: {gender}
-    - Age: {selected_age} (range: {min_age}-{max_age})
-    - Occupation: {selected_occupation}
-    - Personality Style: {selected_personality}
-    - Difficulty: {difficulty}
-
-    Requirements:
-    1. Use the EXACT Name, Age, and Occupation above. Do NOT change them.
-    2. Generate a realistic chief_complaint (surface symptom/initial visit reason).
-    3. Generate 1-4 hidden_information items (true medical facts that could cause drug interactions or safety risks if missed by the pharmacist).
-    4. Vary the case type: young adults, parents, office workers, manual workers, pregnant women, elderly — NOT always elderly with chronic disease.
-    5. Design for two stages: {Stage.GREETING.value} (brief opening) and {Stage.MAIN_CHAT.value} (probing dialogue).
-    """
-
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=system_instruction,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=Patient,
-            temperature=0.9,
-        ),
-    )
-
-    patient_data = json.loads(response.text)
-    return Patient(**patient_data)

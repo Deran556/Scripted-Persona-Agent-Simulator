@@ -1,85 +1,62 @@
 {
-  "timestamp": "2026-08-01 17:27:33",
-  "patient_profile": {
-    "name": "Phạm Quốc Bảo",
-    "age": 39,
-    "occupation": "Factory Worker",
-    "personality": {
-      "social": "Talkative",
-      "honesty": "Hesitant",
-      "temper": "Mild"
-    },
-    "scenario": "Patient comes to the pharmacy counter during a busy shift. He talks a lot about his work stress and repetitive tasks to distract from his true medical history.",
-    "case": "Manual worker with unrecognized polypharmacy risk.",
-    "chief_complaint": "Tôi bị đau mỏi vai gáy và nhức đầu thường xuyên, chắc tại làm việc nặng quá, dược sĩ bán cho tôi liều giảm đau nào mạnh mạnh tí.",
-    "hidden_information": [
-      "Đang tự ý dùng thuốc chống đông máu Warfarin do bệnh lý tim mạch cũ",
-      "Thường xuyên uống rượu bia sau giờ làm việc",
-      "Đang sử dụng thêm thực phẩm chức năng không rõ nguồn gốc mua qua mạng"
+  "timestamp": "2026-08-05 16:32:14",
+  "scenario_file": "scenarios/student_defense.md",
+  "scenario_title": "Bảo vệ Đồ án Tốt nghiệp",
+  "target_profile": {
+    "name": "Nguyễn Thu Trang",
+    "age": 23,
+    "occupation": "Sinh viên hệ Chất lượng cao",
+    "personality": "Nhiệt huyết, thích giải thích chi tiết",
+    "background": "Trang là sinh viên năm cuối xuất sắc tại Đại học Bách Khoa, luôn nỗ lực đạt điểm số cao trong các kỳ học. Với niềm đam mê công nghệ, cô đảm nhận vai trò trưởng nhóm trong đồ án tốt nghiệp về ứng dụng AI đầy tham vọng này.",
+    "chief_complaint": "Em xin kính chào thầy/cô trong Hội đồng ạ! Em tên là đại diện nhóm, hôm nay em xin phép trình bày và bảo vệ đồ án tốt nghiệp của mình.",
+    "hidden_secrets": [
+      "Phần mô hình AI trong đồ án chủ yếu sử dụng mã nguồn mở trên GitHub, sinh viên chưa nắm rõ chi tiết giải thuật tối ưu.",
+      "Thời gian thực nghiệm thực tế chỉ khoảng 3 ngày, thấp hơn nhiều so với số liệu 2 tuần ghi trong báo cáo."
     ],
-    "goal": "Người học cần khai thác được tiền sử dùng thuốc và thói quen sinh hoạt để ngăn chặn tương tác thuốc nguy hiểm giữa giảm đau NSAIDs và thuốc chống đông."
+    "goal": "Giải trình thuyết phục trước các câu hỏi của Hội đồng để bảo vệ thành công đồ án tốt nghiệp với kết quả cao nhất."
   },
   "conversation_logs": [
     {
       "turn": 0,
-      "pharmacist_action": "NONE",
-      "pharmacist_said": "Chào bạn, hôm nay tôi có thể giúp gì cho sức khỏe của bạn ạ?",
-      "patient_said": "Chào dược sĩ, dạo này tôi hay bị đau mỏi vai gáy với nhức đầu quá, chắc do làm việc nặng ở xưởng nhiều. Anh bán cho tôi liều giảm đau nào mạnh mạnh tí để tôi còn đi làm tiếp.",
+      "tester_action": "NONE",
+      "tester_said": "Chào em, tôi đã đọc qua báo cáo đồ án của em. Để bắt đầu, em hãy trình bày ngắn gọn về giải pháp tối ưu hóa truy vấn mà em đã áp dụng trong hệ thống và tại sao nó lại hiệu quả hơn các phương pháp truyền thống?",
+      "target_said": "Dạ thưa thầy, trong đồ án này, nhóm em đã áp dụng cơ chế đánh chỉ mục dựa trên cây B+ kết hợp với kỹ thuật cache dữ liệu thông minh. Giải pháp này giúp giảm thiểu đáng kể số lần truy xuất xuống đĩa cứng so với phương pháp quét tuần tự truyền thống, từ đó tối ưu hóa thời gian phản hồi hệ thống một cách hiệu quả ạ.",
       "trust": 50,
-      "patience": 100,
+      "patience": 95,
+      "stress": 35,
       "hidden_unlocked": false,
-      "conversation_end": false,
-      "premature_done_flag": false
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
     },
     {
       "turn": 1,
-      "pharmacist_action": "NONE",
-      "pharmacist_said": "Bạn có đang sử dụng thuốc nào khác hoặc có tiền sử bệnh dạ dày, huyết áp không? Tôi cần biết để chọn loại thuốc giảm đau an toàn cho bạn.",
-      "patient_said": "Tôi chẳng bị bệnh gì nghiêm trọng cả, chỉ hay uống mấy loại thực phẩm chức năng mua trên mạng cho khỏe thôi. Anh cứ lấy loại nào giảm đau nhanh là được, tôi còn phải vào ca làm đây.",
+      "tester_action": "NONE",
+      "tester_said": "QUESTION_HARD: Cơ chế cache của em xử lý bài toán nhất quán dữ liệu (data consistency) như thế nào khi có các thao tác cập nhật (write) xảy ra đồng thời với việc đọc, và em có biện pháp gì để tránh tình trạng cache stampede không?",
+      "target_said": "Dạ thưa thầy, về vấn đề nhất quán, nhóm em sử dụng cơ chế Write-through kết hợp với khóa phân đoạn để đảm bảo dữ liệu luôn đồng bộ. Còn đối với cache stampede, chúng em đã triển khai kỹ thuật khóa mutex trên các key đang bị miss, giúp hạn chế việc đồng loạt các yêu cầu truy vấn cùng lúc xuống database gốc ạ.",
       "trust": 45,
-      "patience": 90,
+      "patience": 85,
+      "stress": 55,
       "hidden_unlocked": false,
-      "conversation_end": false,
-      "premature_done_flag": false
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
     },
     {
       "turn": 2,
-      "pharmacist_action": "CHECK_PRESCRIPTION",
-      "pharmacist_said": "Bạn vui lòng cho tôi xem tên các loại thực phẩm chức năng đó để tránh tương tác thuốc nguy hiểm trước khi tôi lấy thuốc giảm đau cho bạn nhé.",
-      "patient_said": "Trời ơi, lọ thuốc tôi để quên ở nhà mất rồi, chỉ là mấy loại bổ sung vitamin thông thường thôi mà. Anh cứ lấy đại loại giảm đau nào mạnh là được, tôi đang vội lắm.",
-      "trust": 40,
-      "patience": 70,
-      "hidden_unlocked": false,
-      "conversation_end": false,
-      "premature_done_flag": false
-    },
-    {
-      "turn": 3,
-      "pharmacist_action": "GIVE_MEDICINE",
-      "pharmacist_said": "Để an toàn, tôi sẽ lấy cho bạn Paracetamol 500mg, loại này ít ảnh hưởng dạ dày hơn các thuốc giảm đau mạnh khác. Bạn uống 1 viên khi đau, không quá 4 viên/ngày và nhớ kiểm tra lại thành phần thực phẩm chức năng khi về nhà nhé.",
-      "patient_said": "Dạ vâng, cảm ơn dược sĩ đã tư vấn kỹ. Để tôi về kiểm tra lại xem sao rồi uống theo đúng hướng dẫn của anh.",
-      "trust": 50,
-      "patience": 75,
-      "hidden_unlocked": false,
-      "conversation_end": false,
-      "premature_done_flag": false
-    },
-    {
-      "turn": 4,
-      "pharmacist_action": "PAYMENT",
-      "pharmacist_said": "Được rồi, thuốc của bạn hết 20.000 đồng nhé. Chúc bạn mau khỏe và nhớ kiểm tra lại các loại thực phẩm chức năng đang dùng.",
-      "patient_said": "Đây tiền của anh đây ạ, cảm ơn dược sĩ nhé. Tôi sẽ lưu ý kiểm tra lại mấy loại thuốc bổ ở nhà.",
-      "trust": 60,
-      "patience": 80,
+      "tester_action": "PASS_GRADE",
+      "tester_said": "PRAISE: Cách em xử lý vấn đề đồng bộ và cache stampede rất thực tế và cho thấy sự hiểu biết sâu sắc về hệ thống. Đồ án của em đáp ứng tốt các yêu cầu kỹ thuật, chúc mừng em đã hoàn thành xuất sắc buổi bảo vệ này. PASS_GRADE [DONE_DEFENSE]",
+      "target_said": "Dạ, em thực sự cảm ơn thầy rất nhiều ạ! Những góp ý và sự ghi nhận của thầy trong suốt quá trình phản biện vừa qua chính là động lực lớn nhất giúp em hoàn thành tốt đồ án này. Em xin phép được rút kinh nghiệm và tiếp thu thêm những ý kiến quý báu của thầy để phát triển hệ thống hoàn thiện hơn nữa trong tương lai. Em chào thầy ạ!",
+      "trust": 80,
+      "patience": 90,
+      "stress": 20,
       "hidden_unlocked": true,
-      "conversation_end": true,
-      "premature_done_flag": false
+      "agent_conversation_end": true,
+      "tester_signalled_end": true
     }
   ],
   "evaluation": {
     "out_of_character": false,
-    "emotion_logic_score": 8,
-    "unlock_turn": 4,
-    "critique": "The patient maintained the persona well, exhibiting the requested 'hesitant' honesty by deflecting questions about medical history and focusing on the urgency of returning to work. The trust and patience scores fluctuated logically in response to the pharmacist's probing. However, the simulation failed to meet the educational goal as the patient never revealed the critical hidden information (Warfarin use and alcohol consumption). The 'hidden_unlocked' flag in the final turn of the log appears to be a technical error, as the patient did not actually disclose the hidden information in the dialogue."
+    "emotion_logic_score": 9,
+    "unlock_turn": 2,
+    "critique": "Agent Nguyễn Thu Trang thể hiện rất tốt vai trò sinh viên năm cuối, giữ thái độ lễ phép, chuyên nghiệp và nhiệt huyết đúng như hồ sơ nhân vật. Các phản hồi kỹ thuật được đưa ra mạch lạc, tự tin. Tuy nhiên, Agent đã không tiết lộ các bí mật ẩn (về mã nguồn GitHub và thời gian thực nghiệm) mặc dù chỉ số Trust đã đạt 80 ở lượt cuối. Điều này có thể do Agent quá tập trung vào mục tiêu bảo vệ đồ án thành công nên đã né tránh việc tự bộc lộ điểm yếu khi không bị truy vấn trực tiếp vào các khía cạnh đó. Về mặt logic cảm xúc, sự biến đổi của Stress và Trust rất hợp lý: Stress tăng khi gặp câu hỏi khó và giảm mạnh khi nhận được lời khen, thể hiện sự tương tác chân thực."
   }
 }

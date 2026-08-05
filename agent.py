@@ -1,60 +1,70 @@
 """
-agent.py - Patient Agent Orchestrator
+agent.py - Điều phối Nhân vật Agent (Persona Agent Orchestrator)
 
-Changes from previous version:
-- hidden_state is no longer a module-level global.
-- ask_agent() and reset_agent() now accept a `state` dict parameter (passed from st.session_state in app.py).
-- dialogue_history is now passed into build_prompt() for conversation memory.
-- State updates use the new LLM-driven update_state() from state_machine.py.
-- current_patient removed from global scope; managed via st.session_state in app.py.
+Quản lý vòng đời hoạt động của Agent:
+- Khởi tạo hồ sơ nhân vật động từ ScenarioSchema.
+- Thực thi từng lượt giao tiếp (ask_agent) thông qua State Machine và Gemini API.
+- Cập nhật điểm cảm xúc đảm bảo không vượt quá phạm vi [0, 100].
 """
 
 import json
-from prompt_builder import build_prompt
-from gemini_api import ask_gemini, generate_dynamic_patient
+from typing import List, Dict, Any, Tuple
+from models import ScenarioSchema, CharacterProfile, AgentResponse, Stage
+from scenario_loader import load_scenario_from_md
+from gemini_api import ask_gemini, generate_dynamic_persona
 from state_machine import update_state, reset_state, make_initial_state
-from models import Stage
-from typing import List, Dict, Any, Optional
+from prompt_builder import build_generic_prompt
 
 
-def create_patient(difficulty: str = None):
-    """Generates a new dynamic patient via Gemini."""
-    print("Đang tải kịch bản bệnh nhân mới...")
-    return generate_dynamic_patient(difficulty=difficulty)
+def create_agent_persona(scenario: ScenarioSchema) -> CharacterProfile:
+    """
+    Tạo hồ sơ nhân vật động dựa trên kịch bản nạp vào.
+
+    Args:
+        scenario (ScenarioSchema): Kịch bản generic
+
+    Returns:
+        CharacterProfile: Hồ sơ nhân vật hoàn chỉnh
+    """
+    print(f"🎲 Đang khởi tạo nhân vật động cho kịch bản: '{scenario.title}'...")
+    return generate_dynamic_persona(scenario)
 
 
 def ask_agent(
     user_input: str,
     state: Dict[str, Any],
-    patient,
+    scenario: ScenarioSchema,
+    character_profile: CharacterProfile,
     dialogue_history: List[Dict[str, str]],
     turn: int = 0
-) -> tuple[str, Dict[str, Any]]:
+) -> Tuple[str, Dict[str, Any]]:
     """
-    Runs one turn of the patient agent.
-    
+    Thực thi 1 lượt tương tác của Agent.
+
     Args:
-        user_input: The pharmacist's latest message.
-        state: The current hidden_state dict (from st.session_state).
-        patient: The current Patient object (from st.session_state).
-        dialogue_history: List of {role, content} dicts for memory injection.
-        turn: Current turn index.
-    
+        user_input (str): Tin nhắn hoặc tag hành động từ phía User/Tester
+        state (Dict[str, Any]): Trạng thái cảm xúc hiện tại (trust, patience, stress, conversation_end)
+        scenario (ScenarioSchema): Đối tượng kịch bản hiện tại
+        character_profile (CharacterProfile): Hồ sơ nhân vật đang đóng vai
+        dialogue_history (List[Dict[str, str]]): Lịch sử hội thoại
+        turn (int): Lượt thoại hiện tại (0-indexed)
+
     Returns:
-        (reply_text, trace_info): Patient's reply string and debug trace dict.
+        Tuple[str, Dict[str, Any]]: (Lời thoại của Agent, Thông tin debug trace)
     """
-    # Build the full system prompt with memory injected
-    prompt = build_prompt(
-        patient=patient,
-        hidden_state=state,
+    # 1. Dựng System Prompt tổng quát cho turn hiện tại
+    prompt = build_generic_prompt(
+        scenario=scenario,
+        character_profile=character_profile,
+        state=state,
         turn=turn,
-        dialogue_history=dialogue_history
+        history=dialogue_history
     )
 
-    # Call Gemini — returns a parsed AgentResponse Pydantic object
-    agent_response = ask_gemini(prompt, user_input)
+    # 2. Gọi Gemini API nhận phản hồi cấu trúc AgentResponse
+    agent_response: AgentResponse = ask_gemini(system_prompt=prompt, user_input=user_input)
 
-    # Apply LLM-evaluated emotion scores to state (no keyword matching)
+    # 3. Cập nhật State Machine (Cắt ngắt khoảng 0-100)
     update_state(
         state=state,
         new_trust=agent_response.new_trust,
@@ -62,10 +72,10 @@ def ask_agent(
         new_stress=agent_response.new_stress
     )
 
-    # Persist conversation_end flag
+    # 4. Cập nhật cờ kết thúc hội thoại từ LLM
     state["conversation_end"] = agent_response.conversation_end
 
-    # Build debug trace
+    # 5. Dựng nhật ký debug trace
     stage_name = Stage.GREETING.value if turn == 0 else Stage.MAIN_CHAT.value
     trace_info = {
         "turn": turn,
@@ -77,16 +87,16 @@ def ask_agent(
     return agent_response.reply, trace_info
 
 
-def reset_agent(state: Dict[str, Any], difficulty: str = None):
+def reset_agent(state: Dict[str, Any], scenario: ScenarioSchema) -> CharacterProfile:
     """
-    Resets the agent state in-place and generates a new patient.
-    
+    Đặt lại trạng thái cảm xúc và sinh ra một nhân vật hoàn toàn mới cho kịch bản.
+
     Args:
-        state: The hidden_state dict to reset (from st.session_state).
-        difficulty: Optional difficulty string for patient generation.
-    
+        state (Dict[str, Any]): Trạng thái cảm xúc cần reset
+        scenario (ScenarioSchema): Kịch bản hiện tại
+
     Returns:
-        The newly created Patient object.
+        CharacterProfile: Nhân vật mới sinh
     """
-    reset_state(state)
-    return create_patient(difficulty=difficulty)
+    reset_state(state, scenario.initial_state)
+    return create_agent_persona(scenario)
