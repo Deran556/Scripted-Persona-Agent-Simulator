@@ -1,12 +1,13 @@
 """
-scenario_loader.py - Trình nạp kịch bản Generic từ File Markdown (.md)
+scenario_loader.py - Trình nạp Kịch bản Generic từ File Markdown (.md)
 
-Nhiệm vụ:
-- Sử dụng thư viện `python-frontmatter` để đọc và tách biệt giữa YAML Frontmatter (metadata cấu hình) 
-  và Markdown Content (nội dung hướng dẫn chi tiết).
-- Ánh xạ dữ liệu vào `ScenarioSchema` sử dụng Pydantic.
-- Đảm bảo tính an toàn cao (Robustness & Fallback): Nhờ Pydantic `Field(default=...)`, hệ thống 
-  sẽ tự động bù đắp dữ liệu thiếu mà KHÔNG BAO GIỜ bị crash ứng dụng.
+Sử dụng thư viện `python-frontmatter` để đọc và tách biệt:
+- YAML Frontmatter: Metadata cấu hình kịch bản (Dynamic Pools, Rules, Actions, Test Config, Secret Rules).
+- Markdown Body: Nội dung chỉ dẫn nhập vai chi tiết.
+
+Tính an toàn tuyệt đối (Fallback Protection):
+Nếu file .md bị thiếu form hoặc người dùng quên điền bất kỳ thuộc tính nào trong YAML, 
+Pydantic Schema (ScenarioSchema) sẽ tự động bù đắp dữ liệu mặc định mà KHÔNG BAO GIỜ bị crash.
 """
 
 import os
@@ -16,47 +17,47 @@ from models import ScenarioSchema
 
 def load_scenario_from_md(file_path: str) -> ScenarioSchema:
     """
-    Đọc file .md, phân tách YAML Frontmatter và Markdown Body, 
-    trả về đối tượng ScenarioSchema đã qua kiểm duyệt Pydantic.
+    Đọc file kịch bản .md, phân tách YAML Frontmatter và Markdown Body,
+    chuyển đổi an toàn thành đối tượng ScenarioSchema.
 
     Args:
-        file_path (str): Đường dẫn tuyệt đối hoặc tương đối tới file kịch bản .md
+        file_path (str): Đường dẫn tới file kịch bản .md
 
     Returns:
-        ScenarioSchema: Đối tượng kịch bản hoàn chỉnh với dữ liệu fallback an toàn.
+        ScenarioSchema: Đối tượng kịch bản đã qua kiểm duyệt Pydantic Schema với fallback an toàn.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Không tìm thấy file kịch bản tại đường dẫn: {file_path}")
 
-    # Đọc file markdown bằng python-frontmatter
+    # Đọc file markdown chứa frontmatter
     post = frontmatter.load(file_path)
-    metadata = dict(post.metadata)
+    metadata = dict(post.metadata) if post.metadata else {}
 
     # Đưa nội dung phần Markdown Body vào trường instructions
     instructions_text = post.content.strip() if post.content else ""
     metadata["instructions"] = instructions_text
 
-    # Pydantic model_validate tự động xử lý ép kiểu và bù dữ liệu thiếu từ default values
+    # ScenarioSchema.model_validate tự động xử lý ép kiểu và bù đắp các giá trị mặc định thiếu
     scenario = ScenarioSchema.model_validate(metadata)
     return scenario
 
 
 def list_available_scenarios(scenarios_dir: str = "scenarios") -> dict[str, str]:
     """
-    Quét thư mục kịch bản và trả về dictionary {Tên hiển thị: Đường dẫn file .md}.
+    Quét thư mục scenarios/ và trả về dictionary {Tên hiển thị: Đường dẫn file .md}.
 
     Args:
-        scenarios_dir (str): Đường dẫn thư mục chứa các file kịch bản .md
+        scenarios_dir (str): Thư mục chứa các kịch bản .md
 
     Returns:
-        dict[str, str]: Bản đồ tên kịch bản -> đường dẫn file
+        dict[str, str]: Bản đồ tên kịch bản -> đường dẫn file .md
     """
     if not os.path.exists(scenarios_dir):
         os.makedirs(scenarios_dir, exist_ok=True)
         return {}
 
     scenario_files = {}
-    for filename in os.listdir(scenarios_dir):
+    for filename in sorted(os.listdir(scenarios_dir)):
         if filename.endswith(".md"):
             full_path = os.path.join(scenarios_dir, filename)
             try:
@@ -64,7 +65,6 @@ def list_available_scenarios(scenarios_dir: str = "scenarios") -> dict[str, str]
                 display_name = f"{sc.title} ({sc.role})"
                 scenario_files[display_name] = full_path
             except Exception as e:
-                # Nếu file hỏng nặng không đọc được YAML, lấy tên file làm fallback
-                scenario_files[f"Lỗi: {filename}"] = full_path
+                scenario_files[f"File lỗi: {filename}"] = full_path
 
     return scenario_files

@@ -1,16 +1,14 @@
 """
 models.py - Khung dữ liệu Pydantic Schema cho Generic Markdown Scenario Engine
 
-Định nghĩa toàn bộ các Pydantic Schema tổng quát được sử dụng trong hệ thống:
-- DynamicPools: Các bể dữ liệu ngẫu nhiên (tên, tuổi, nghề nghiệp, tính cách)
-- InitialState: Điểm cảm xúc khởi tạo (trust, patience, stress)
-- CompletionRules: Quy tắc kết thúc hội thoại (max_turns, completion_keywords)
-- UserAction: Định nghĩa các action button trên giao diện
-- TestConfig: Cấu hình cho framework kiểm thử tự động auto_test.py
-- ScenarioSchema: Schema tổng thể nạp từ file kịch bản .md
-- CharacterProfile: Profile nhân vật chi tiết được sinh bởi LLM
-- AgentResponse: JSON Schema bắt buộc cho phản hồi của Agent
-- EvaluationReport: Báo cáo đánh giá chất lượng phiên giả lập
+Cập nhật:
+- Thêm ComplaintGenerationRules và SecretGenerationRules hỗ trợ Gemini tự động sinh ngẫu nhiên
+  lý do đến khám (chief_complaint) và bí mật ẩn (hidden_secrets) theo luật (Rules).
+- Cập nhật ScenarioSchema hỗ trợ cả 2 chế độ (tương thích ngược):
+  + Chế độ cũ: chief_complaint / hidden_secrets chuỗi/mảng tĩnh điền sẵn trong YAML.
+  + Chế độ mới: complaint_generation_rules / secret_generation_rules tự động sinh qua Gemini API.
+- Đảm bảo 100% tất cả các trường đều có Pydantic Field(default=...) hoặc Field(default_factory=...)
+  để ứng dụng không bao giờ bị crash do thiếu dữ liệu từ file .md.
 """
 
 from typing import List, Dict, Any, Optional
@@ -26,24 +24,61 @@ class Stage(str, Enum):
 
 class DynamicPools(BaseModel):
     """
-    Bể dữ liệu động cho phép bốc ngẫu nhiên thông số nhân vật.
-    Sử dụng Field(default=...) để đảm bảo fallback nếu file .md thiếu dữ liệu.
+    Bể dữ liệu động bốc ngẫu nhiên thông số nhân vật (Tên, Tuổi, Nghề nghiệp, Tính cách, Chief Complaints, Project Topics).
     """
     names: List[str] = Field(
-        default_factory=lambda: ["Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D"],
+        default_factory=lambda: ["Nguyễn Văn A", "Trần Thị B"],
         description="Danh sách tên ngẫu nhiên"
     )
     age_ranges: List[List[int]] = Field(
-        default_factory=lambda: [[18, 25], [26, 35], [36, 50]],
+        default_factory=lambda: [[20, 30]],
         description="Các khoảng tuổi ngẫu nhiên [min_age, max_age]"
     )
     occupations: List[str] = Field(
-        default_factory=lambda: ["Sinh viên", "Nhân viên văn phòng", "Kỹ sư", "Giáo viên"],
+        default_factory=lambda: ["Sinh viên", "Nhân viên"],
         description="Danh sách nghề nghiệp ngẫu nhiên"
     )
     personalities: List[str] = Field(
-        default_factory=lambda: ["Thân thiện, cởi mở", "Rụt rè, lo lắng", "Bình tĩnh, tự tin", "Gắt gỏng, nghi ngờ"],
-        description="Danh sách nét tính cách ngẫu nhiên"
+        default_factory=lambda: ["Cởi mở, hợp tác", "Rụt rè, ngần ngại", "Gắt gỏng, vội vã"],
+        description="Danh sách các nhóm nét tính cách"
+    )
+    chief_complaints: List[str] = Field(
+        default_factory=list,
+        description="Bể lý do đến khám / yêu cầu ban đầu (nếu có)"
+    )
+    project_topics: List[str] = Field(
+        default_factory=list,
+        description="Bể đề tài đồ án / công việc (nếu có)"
+    )
+
+
+class ComplaintGenerationRules(BaseModel):
+    """
+    Cấu hình hướng dẫn Gemini AI tự động sinh lý do đến khám/yêu cầu ban đầu (chief_complaint) sống động.
+    """
+    instruction: str = Field(
+        default="Sinh ra 1 câu lý do đến khám/yêu cầu ngắn gọn, tự nhiên và phù hợp với vai trò nhân vật.",
+        description="Chỉ dẫn chuyên biệt cho Gemini sinh lý do mở đầu"
+    )
+    allowed_symptom_scopes: List[str] = Field(
+        default_factory=lambda: ["Các vấn đề sức khỏe phổ biến", "Tư vấn chuyên môn"],
+        description="Phạm vi chủ đề hoặc triệu chứng được phép sinh"
+    )
+
+
+class SecretGenerationRules(BaseModel):
+    """
+    Cấu hình cho phép Gemini AI tự động sinh ngẫu nhiên 1-3 bí mật ẩn dựa theo các chủ đề (Topics).
+    """
+    min_secrets: int = Field(default=1, description="Số lượng bí mật tối thiểu cần sinh")
+    max_secrets: int = Field(default=3, description="Số lượng bí mật tối đa cần sinh")
+    instruction: str = Field(
+        default="Sinh ra bí mật ẩn liên quan đến vấn đề đang hỏi và hoàn cảnh nhân vật.",
+        description="Chỉ dẫn cho Gemini khi sinh bí mật ẩn"
+    )
+    secret_topics: List[str] = Field(
+        default_factory=lambda: ["Thói quen xấu", "Thông tin chưa kể"],
+        description="Danh sách chủ đề gợi ý để AI sinh bí mật ẩn"
     )
 
 
@@ -53,90 +88,105 @@ class InitialState(BaseModel):
     """
     trust: int = Field(default=50, description="Điểm tin tưởng ban đầu (0-100)")
     patience: int = Field(default=100, description="Điểm kiên nhẫn ban đầu (0-100)")
-    stress: int = Field(default=0, description="Điểm căng thẳng ban đầu (0-100)")
-    conversation_end: bool = Field(default=False, description="Trạng thái kết thúc hội thoại")
+    stress: int = Field(default=10, description="Điểm căng thẳng ban đầu (0-100)")
+    conversation_end: bool = Field(default=False, description="Cờ trạng thái kết thúc cuộc hội thoại")
 
 
 class CompletionRules(BaseModel):
     """
-    Quy tắc ngắt hội thoại để tránh lỗi vô hạn turn (Infinite Loop).
+    Quy tắc ngắt cuộc hội thoại để tránh lỗi vô hạn turn (Infinite Loop).
     """
     max_turns: int = Field(default=10, description="Số turn tối đa trước khi cưỡng chế ngắt")
     completion_keywords: List[str] = Field(
-        default_factory=lambda: ["[DONE]", "[KET_THUC]", "[DONE_DEFENSE]", "[HOAN_THANH]"],
-        description="Các từ khóa/tag tín hiệu kết thúc từ phía User hoặc Tester"
+        default_factory=lambda: ["[DONE]", "[PASSED]", "[FAILED]", "[PAYMENT]", "[DONE_DEFENSE]"],
+        description="Từ khóa/tag hành động từ phía User hoặc Tester để kết thúc hội thoại"
     )
 
 
 class UserAction(BaseModel):
     """
-    Định nghĩa một nút bấm thao tác trên Dynamic Action Bar (Streamlit UI / Auto Test).
+    Định nghĩa nút bấm thao tác nghiệp vụ trên Dynamic Action Bar.
     """
-    label: str = Field(default="Hành động", description="Tên hiển thị trên button UI")
+    label: str = Field(default="Thao tác", description="Tên hiển thị trên nút bấm")
     action_tag: str = Field(default="NONE", description="Mã tag đính kèm vào tin nhắn chat")
     description: str = Field(default="", description="Mô tả công dụng của hành động")
 
 
 class TestConfig(BaseModel):
     """
-    Cấu hình chạy kiểm thử tự động LLM-vs-LLM cho auto_test.py.
+    Cấu hình kiểm thử tự động LLM-vs-LLM cho auto_test.py.
     """
-    tester_role: str = Field(default="Giám khảo", description="Vai trò của AI 1 (Tester)")
+    tester_role: str = Field(default="Evaluator", description="Vai trò của AI 1 (Tester)")
     tester_system_prompt: str = Field(default="", description="System prompt định hướng cho AI 1")
     evaluation_criteria: List[str] = Field(
-        default_factory=lambda: [
-            "Kiểm tra xem Agent có giữ đúng vai không",
-            "Kiểm tra xem điểm số cảm xúc cập nhật có hợp lý không",
-            "Kiểm tra xem bí mật ẩn có được tiết lộ khi Trust > 60 hay không"
-        ],
-        description="Danh sách các tiêu chí để AI 2 (Evaluator) chấm điểm"
+        default_factory=list,
+        description="Các tiêu chí đánh giá cho AI 2 (Evaluator)"
     )
 
 
 class ScenarioSchema(BaseModel):
     """
-    Pydantic Schema tổng thể của một Kịch bản (Scenario).
-    Tích hợp Pydantic Field(default=...) đảm bảo 100% không crash khi file .md bị thiếu thuộc tính.
+    Pydantic Schema tổng thể đại diện cho Kịch bản (.md file).
+    Tương thích ngược hoàn hảo cả chế độ cũ (chuỗi tĩnh) và chế độ mới (dynamic rules).
+    Sử dụng Field(default=...) cho TẤT CẢ thuộc tính, đảm bảo 100% không bao giờ crash nếu thiếu Form.
     """
     title: str = Field(default="Kịch bản mặc định", description="Tiêu đề kịch bản")
-    role: str = Field(default="Nhân vật mô phỏng", description="Vai trò của Agent (ví dụ: Sinh viên, Bệnh nhân)")
-    user_role: str = Field(default="Người tương tác", description="Vai trò của User (ví dụ: Giám khảo, Dược sĩ)")
+    role: str = Field(default="Nhân vật mô phỏng", description="Vai trò của Agent")
+    user_role: str = Field(default="Người tương tác", description="Vai trò của User")
     scenario: str = Field(default="", description="Tóm tắt bối cảnh tổng quan")
-    case: str = Field(default="", description="Chi tiết ca mô phỏng cụ thể")
-    chief_complaint: str = Field(default="", description="Yêu cầu/Lý do ban đầu nhân vật đưa ra công khai")
-    hidden_secrets: List[str] = Field(default_factory=list, description="Danh sách các sự thật ẩn / bí mật")
+    case: str = Field(default="", description="Chi tiết tình huống cụ thể")
+    
+    # Hỗ trợ tương thích ngược cho chief_complaint & hidden_secrets chuỗi/mảng tĩnh
+    chief_complaint: Optional[str] = Field(
+        default=None,
+        description="Lý do/Yêu cầu mở đầu tĩnh (dùng tương thích ngược nếu file .md điền trực tiếp)"
+    )
+    hidden_secrets: Optional[List[str]] = Field(
+        default=None,
+        description="Danh sách bí mật ẩn tĩnh (dùng tương thích ngược nếu file .md điền trực tiếp)"
+    )
+    
+    # Quy tắc sinh động mới
+    complaint_generation_rules: Optional[ComplaintGenerationRules] = Field(
+        default_factory=ComplaintGenerationRules,
+        description="Quy tắc tự động sinh lý do mở đầu ngẫu nhiên qua Gemini API"
+    )
+    secret_generation_rules: Optional[SecretGenerationRules] = Field(
+        default_factory=SecretGenerationRules,
+        description="Quy tắc tự động sinh bí mật ẩn ngẫu nhiên qua Gemini API"
+    )
+    
     goal: str = Field(default="", description="Mục tiêu cốt lõi của nhân vật")
     
     dynamic_pools: DynamicPools = Field(default_factory=DynamicPools, description="Bể dữ liệu bốc ngẫu nhiên")
-    initial_state: InitialState = Field(default_factory=InitialState, description="Điểm cảm xúc ban đầu")
+    initial_state: InitialState = Field(default_factory=InitialState, description="Trạng thái cảm xúc khởi tạo")
     completion_rules: CompletionRules = Field(default_factory=CompletionRules, description="Quy tắc ngắt hội thoại")
-    user_actions: List[UserAction] = Field(default_factory=list, description="Danh sách nút bấm thao tác UI")
-    test_config: TestConfig = Field(default_factory=TestConfig, description="Cấu hình test tự động")
+    user_actions: List[UserAction] = Field(default_factory=list, description="Thao tác nghiệp vụ trên Action Bar")
+    test_config: TestConfig = Field(default_factory=TestConfig, description="Cấu hình chạy auto test")
     
     instructions: str = Field(default="", description="Nội dung Markdown Body (chứa chỉ dẫn chuyên sâu)")
 
 
 class CharacterProfile(BaseModel):
     """
-    Profile chi tiết của nhân vật sau khi được Gemini sinh ra dựa trên ScenarioSchema và DynamicPools.
+    Profile chi tiết của nhân vật được sinh tự động bởi Gemini API.
     """
-    name: str = Field(default="Nguyễn Văn A", description="Tên nhân vật")
+    name: str = Field(default="Nguyễn Văn A", description="Họ tên nhân vật")
     age: int = Field(default=22, description="Tuổi nhân vật")
     occupation: str = Field(default="Sinh viên", description="Nghề nghiệp")
-    personality: str = Field(default="Bình tĩnh", description="Tính cách đặc trưng")
+    personality: str = Field(default="Cởi mở, hợp tác", description="Tính cách đặc trưng")
     background: str = Field(default="", description="Tiểu sử / Hoàn cảnh chi tiết")
     chief_complaint: str = Field(default="", description="Lý do / Lời mở đầu công khai")
-    hidden_secrets: List[str] = Field(default_factory=list, description="Các bí mật ẩn của nhân vật này")
+    hidden_secrets: List[str] = Field(default_factory=list, description="Danh sách các bí mật ẩn")
     goal: str = Field(default="", description="Mục tiêu hành động")
 
 
 class AgentResponse(BaseModel):
     """
-    Schema phản hồi từ Gemini API (Structured Output JSON).
-    Đánh giá trạng thái tâm lý và cờ kết thúc hội thoại.
+    Structured Output JSON nhận từ Gemini API cho mỗi lượt thoại của Agent.
     """
     reply: str = Field(
-        description="Lời thoại của nhân vật, phản hồi lại tin nhắn mới nhất"
+        description="Lời thoại nhập vai của nhân vật"
     )
     new_trust: int = Field(
         description="Điểm tin tưởng mới cập nhật (0-100)"
@@ -149,15 +199,15 @@ class AgentResponse(BaseModel):
     )
     conversation_end: bool = Field(
         default=False,
-        description="Đánh dấu True nếu cuộc hội thoại đã hoàn thành tự nhiên và hai bên chia tay"
+        description="True nếu cuộc hội thoại đã kết thúc tự nhiên và hai bên chào tạm biệt"
     )
 
 
 class EvaluationReport(BaseModel):
     """
-    Báo cáo chấm điểm từ AI 2 (Evaluator) trong auto_test.py.
+    Kết quả chấm điểm phiên mô phỏng từ AI 2 (Evaluator).
     """
     out_of_character: bool = Field(description="True nếu Agent đóng sai vai hoặc vi phạm nguyên tắc persona")
-    emotion_logic_score: int = Field(description="Thang điểm 1-10 đánh giá tính logic khi thay đổi cảm xúc")
-    unlock_turn: int = Field(description="Turn (0-indexed) tiết lộ bí mật ẩn, hoặc -1 nếu chưa bao giờ tiết lộ")
-    critique: str = Field(description="Nhận xét định tính chi tiết về phiên mô phỏng")
+    emotion_logic_score: int = Field(description="Điểm 1-10 đánh giá tính logic khi biến đổi cảm xúc")
+    unlock_turn: int = Field(description="Turn index (0-indexed) tiết lộ bí mật ẩn (-1 nếu chưa bao giờ tiết lộ)")
+    critique: str = Field(description="Đánh giá định tính chi tiết bằng Tiếng Việt")

@@ -2,11 +2,9 @@
 prompt_builder.py - Dựng System Prompt Tổng quát (Generic Prompt Builder)
 
 Chức năng:
-- build_generic_prompt(): Tạo prompt hệ thống động cho mọi vai trò (Role), kịch bản (Scenario), 
-  và hồ sơ nhân vật (CharacterProfile).
-- Tích hợp Quy tắc Giai đoạn (Stage): Turn 0 là GREETING, Turn > 0 là MAIN_CHAT.
-- Tích hợp Quy tắc Chống lặp (Anti-Looping Protocol): Ngăn chặn lặp lại câu đã nói trong lịch sử.
-- Tích hợp Quy tắc Tiết lộ Bí mật (Hidden Secrets Gate): Chỉ cho phép tiết lộ bí mật khi điểm Trust > 60.
+- build_generic_prompt(): Ghép nối thông tin kịch bản (ScenarioSchema), hồ sơ nhân vật (CharacterProfile),
+  nội dung Markdown Body (instructions), trạng thái cảm xúc (state), quy tắc giai đoạn (Stage), 
+  chống lặp (Anti-looping) và tiết lộ bí mật ẩn (Hidden Secrets Gate khi Trust > 60).
 """
 
 from typing import List, Dict, Any
@@ -24,24 +22,24 @@ def build_generic_prompt(
     Dựng System Prompt tổng quát cho Gemini LLM.
 
     Args:
-        scenario (ScenarioSchema): Cấu hình kịch bản gốc
+        scenario (ScenarioSchema): Đối tượng kịch bản .md đã nạp
         character_profile (CharacterProfile): Hồ sơ nhân vật cụ thể
-        state (Dict[str, Any]): Trạng thái cảm xúc hiện tại (trust, patience, stress)
-        turn (int): Chỉ số lượt thoại hiện tại (0-indexed)
-        history (List[Dict[str, str]]): Lịch sử hội thoại [{role: ..., content: ...}]
+        state (Dict[str, Any]): Trạng thái cảm xúc (trust, patience, stress)
+        turn (int): Lượt thoại hiện tại (0-indexed)
+        history (List[Dict[str, str]]): Lịch sử hội thoại
 
     Returns:
-        str: Chuỗi System Prompt hoàn chỉnh để nạp vào LLM
+        str: Chuỗi System Prompt hoàn chỉnh
     """
     trust = state.get("trust", 50)
     patience = state.get("patience", 100)
-    stress = state.get("stress", 0)
+    stress = state.get("stress", 10)
 
     # --- 1. Quy tắc Giai đoạn (Stage Instruction) ---
     if turn == 0:
         stage_instruction = f"""
 Current Stage: GREETING (Turn 0)
-- Bạn đang trong lượt mở đầu cuộc tương tác.
+- Bạn đang mở đầu cuộc tương tác.
 - Lời nói của bạn phải là câu chào và nêu yêu cầu/lý do ban đầu ({character_profile.chief_complaint}) một cách tự nhiên (1-2 câu).
 - Tuyệt đối chưa đề cập tới các bí mật giấu kín.
 """
@@ -76,10 +74,10 @@ Current Stage: MAIN_CHAT (Turn {turn})
     memory_block = ""
     if history:
         formatted_lines = []
-        for entry in history[-6:]:  # Giữ tối đa 6 lượt thoại gần nhất để tránh phình prompt
+        for entry in history[-6:]:  # Giữ 6 lượt thoại gần nhất
             role_label = scenario.user_role if entry["role"] == "user" else f"Bạn ({scenario.role})"
             formatted_lines.append(f"{role_label}: {entry['content']}")
-        memory_block = "\n--- LỊCH SỬ HỘI THOẠI GẦN ĐÂY (Dùng để lấy ngữ cảnh, TUYỆT ĐỐI KHÔNG LẶP LẠI LỜI ĐÃ NÓI) ---\n" + "\n".join(formatted_lines)
+        memory_block = "\n--- LỊCH SỬ HỘI THOẠI GẦN ĐÂY (TUYỆT ĐỐI KHÔNG LẶP LẠI LỜI ĐÃ NÓI) ---\n" + "\n".join(formatted_lines)
 
     # --- 4. Tổng hợp Prompt ---
     full_prompt = f"""

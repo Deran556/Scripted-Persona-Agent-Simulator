@@ -2,12 +2,12 @@
 auto_test.py - Automated LLM-vs-LLM Simulation & QA Evaluation Framework
 
 Hệ thống Kiểm thử Tự động 2 AI (LLM-vs-LLM) cho Generic Markdown Scenario Engine:
-- Nạp kịch bản .md bất kỳ (ví dụ: scenarios/student_defense.md).
-- AI 1 (Tester Agent): Đóng vai Tester (ví dụ: Giám khảo), đọc system prompt từ scenario.test_config.tester_system_prompt và được phép chọn action từ user_actions.
-- Target Agent (Agent under test): Đóng vai Persona Agent (ví dụ: Sinh viên), duy trì state machine cô lập.
-- Cầu chì ngắt 3 lớp (Triple-Layer End Protocol) để chống lặp vô hạn (Infinite Loop):
+- Nạp kịch bản .md bất kỳ (ví dụ: scenarios/student_defense.md hoặc scenarios/patient_pharmacy.md).
+- AI 1 (Tester Agent): Đóng vai Tester, nạp system prompt từ scenario.test_config.tester_system_prompt và được phép chọn action từ user_actions.
+- Target Agent (Agent under test): Đóng vai Persona Agent, tự động sinh hidden_secrets nếu kịch bản quy định.
+- Cầu chì ngắt 3 lớp (Triple-Layer End Protocol):
   1. Lớp 1: Target Agent trả về conversation_end = True.
-  2. Lớp 2: AI 1 (Tester) phát ra từ khóa ngắt trong completion_keywords (ví dụ: [DONE_DEFENSE], [DONE]).
+  2. Lớp 2: AI 1 (Tester) phát từ khóa ngắt trong completion_keywords ([DONE], [PASSED], [FAILED], [PAYMENT]).
   3. Lớp 3: Số turn chạm ngưỡng max_turns của kịch bản.
 - AI 2 (Evaluator Agent): Đánh giá QA phiên thử nghiệm dựa trên evaluation_criteria từ .md và lưu kết quả JSON.
 """
@@ -71,7 +71,7 @@ class PersonaAgentWrapper:
             "text": reply_text,
             "trust": self.state.get("trust", 50),
             "patience": self.state.get("patience", 100),
-            "stress": self.state.get("stress", 0),
+            "stress": self.state.get("stress", 10),
             "conversation_end": self.state.get("conversation_end", False),
             "hidden_info_unlocked": can_reveal_secret(self.state),
             "trace_info": trace_info
@@ -107,7 +107,7 @@ Bạn đang tương tác với: {scenario.role}.
 --- THÔNG TIN KỊCH BẢN ---
 - Kịch bản: {scenario.title}
 - Vai trò đối phương: {scenario.role}
-- Từ khóa kết thúc hội thoại (khi hoàn thành mục tiêu test): {scenario.completion_rules.completion_keywords}
+- Từ khóa kết thúc hội thoại: {scenario.completion_rules.completion_keywords}
 
 --- ĐỊNH DẠNG ĐẦU RA BẮT BUỘC ---
 ACTION: <MÃ_TAG_HÀNH_ĐỘNG> (Phải là một trong: {', '.join(valid_actions)})
@@ -158,7 +158,6 @@ def _parse_tester_output(raw_text: str, valid_actions: List[str]) -> Dict[str, s
 
     if action_line:
         candidate = action_line.split(":", 1)[1].strip().upper()
-        # Loại bỏ ngoặc vuông nếu có
         candidate = candidate.replace("[", "").replace("]", "")
         if candidate in valid_actions:
             action = candidate
@@ -249,7 +248,7 @@ def run_automated_test(scenario_path: str = "scenarios/student_defense.md", repo
     print(f"   Occupation: {profile.get('occupation')}")
     print(f"   Personality: {profile.get('personality')}")
     print(f"   Chief Complaint: {profile.get('chief_complaint')}")
-    print(f"   Hidden Secrets: {profile.get('hidden_secrets')}")
+    print(f"   Hidden Secrets (Dynamic/Static): {profile.get('hidden_secrets')}")
     print("-" * 70)
 
     conversation_logs = []
@@ -284,7 +283,7 @@ def run_automated_test(scenario_path: str = "scenarios/student_defense.md", repo
             unlock_turn_detected = turn
 
         # Kiểm tra từ khóa ngắt trong câu nói của Tester
-        tester_signalled_end = any(kw.lower() in tester_said.lower() for kw in completion_keywords)
+        tester_signalled_end = any(kw.lower() in tester_said.lower() for kw in completion_keywords) or tester_action in completion_keywords
 
         conversation_logs.append({
             "turn": turn,
@@ -305,9 +304,9 @@ def run_automated_test(scenario_path: str = "scenarios/student_defense.md", repo
             print("\n🏁 [LAYER 1 END]: Target Agent returned conversation_end=True. Stopping simulation.")
             break
 
-        # Lớp 2: Tester phát tín hiệu ngắt (nằm trong completion_keywords)
+        # Lớp 2: Tester phát tín hiệu ngắt (nằm trong completion_keywords hoặc Action tag)
         if tester_signalled_end:
-            print(f"\n🏁 [LAYER 2 END]: Tester emitted completion keyword. Stopping simulation.")
+            print(f"\n🏁 [LAYER 2 END]: Tester emitted completion keyword/action. Stopping simulation.")
             break
 
         # Lớp 3: Tự động ngắt khi hết loop (turn == max_turns - 1)

@@ -1,11 +1,15 @@
 """
-gemini_api.py - Động cơ sinh nhân vật & Gọi Gemini API với Structured Output
+gemini_api.py - Động cơ Sinh Nhân vật & Gọi Gemini API với Structured Output
 
-Chức năng:
-- generate_dynamic_persona(scenario: ScenarioSchema): Bốc ngẫu nhiên thông số từ scenario.dynamic_pools 
-  (Tên, Tuổi, Nghề nghiệp, Tính cách) và dùng Gemini API để tạo CharacterProfile chi tiết.
-- ask_gemini(system_prompt, user_input): Gửi prompt tới Gemini API và nhận phản hồi cấu trúc 
-  chuẩn Pydantic AgentResponse (reply, new_trust, new_patience, new_stress, conversation_end).
+Nâng cấp Logic Dynamic Character Generation:
+1. Python bốc ngẫu nhiên Tên, Tuổi, Nghề nghiệp, Tính cách (và Chief Complaint / Project Topic từ Pool nếu có).
+2. Logic Fallback thông minh cho `chief_complaint`:
+   - Nếu `scenario.chief_complaint` hoặc pool `chief_complaints` có sẵn -> dùng trực tiếp.
+   - Ngược lại -> Sử dụng `complaint_generation_rules` yêu cầu Gemini tự sáng tạo lý do phù hợp nhân khẩu học.
+3. Logic Fallback thông minh cho `hidden_secrets`:
+   - Nếu `scenario.hidden_secrets` điền mảng sẵn -> dùng mảng đó.
+   - Ngược lại -> Sử dụng `secret_generation_rules` yêu cầu Gemini tự sinh từ min đến max secrets dựa trên secret_topics và khớp logic với chief_complaint.
+4. Bắt lỗi try-except an toàn và trả về đối tượng CharacterProfile hoàn chỉnh.
 """
 
 import json
@@ -27,80 +31,149 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_dynamic_persona(scenario: ScenarioSchema) -> CharacterProfile:
     """
-    Bốc ngẫu nhiên các yếu tố từ scenario.dynamic_pools và yêu cầu Gemini API 
-    sinh ra một Profile nhân vật hoàn chỉnh (CharacterProfile).
+    Tự động sinh Profile nhân vật (CharacterProfile) thông qua Gemini API.
+    Xử lý thông minh cả 2 chế độ (tĩnh & tự sinh động qua Rules).
 
     Args:
-        scenario (ScenarioSchema): Kịch bản generic đã nạp
+        scenario (ScenarioSchema): Kịch bản generic nạp từ file .md
 
     Returns:
-        CharacterProfile: Hồ sơ nhân vật chi tiết được tạo tự động
+        CharacterProfile: Đối tượng hồ sơ nhân vật hoàn chỉnh
     """
     pools = scenario.dynamic_pools
 
-    # 🎲 Bốc ngẫu nhiên các tham số từ dynamic_pools của kịch bản
+    # 🎲 1. Bốc ngẫu nhiên thông số nhân khẩu học bằng Python
     names = pools.names if pools.names else ["Nguyễn Văn A", "Trần Thị B"]
-    occupations = pools.occupations if pools.occupations else ["Sinh viên", "Kỹ sư"]
-    personalities = pools.personalities if pools.personalities else ["Bình tĩnh, tự tin"]
-    age_ranges = pools.age_ranges if pools.age_ranges else [[18, 25]]
+    occupations = pools.occupations if pools.occupations else ["Sinh viên", "Nhân viên"]
+    personalities = pools.personalities if pools.personalities else ["Cởi mở, hợp tác"]
+    age_ranges = pools.age_ranges if pools.age_ranges else [[20, 30]]
 
     selected_name = random.choice(names)
     selected_occupation = random.choice(occupations)
     selected_personality = random.choice(personalities)
     
     selected_range = random.choice(age_ranges)
-    min_age = selected_range[0] if len(selected_range) > 0 else 18
+    min_age = selected_range[0] if len(selected_range) > 0 else 20
     max_age = selected_range[1] if len(selected_range) > 1 else min_age + 5
     selected_age = random.randint(min_age, max_age)
 
-    # Prompt yêu cầu Gemini đóng vai chuyên gia tạo nhân vật
+    # 🎲 2. Xử lý logic Chief Complaint (Lý do mở đầu)
+    preselected_complaint = None
+    if scenario.chief_complaint:
+        preselected_complaint = scenario.chief_complaint
+    elif pools.chief_complaints and len(pools.chief_complaints) > 0:
+        preselected_complaint = random.choice(pools.chief_complaints)
+
+    complaint_instruction = ""
+    if preselected_complaint:
+        complaint_instruction = f"""
+    - LÝ DO MỞ ĐẦU (chief_complaint): BẮT BUỘC GIỮ NGUYÊN chuỗi đã chọn sau đây: "{preselected_complaint}"
+    """
+    else:
+        rules = scenario.complaint_generation_rules
+        instr = rules.instruction if rules else "Sinh ra 1 câu lý do đến khám/yêu cầu ngắn gọn, tự nhiên."
+        scopes = ", ".join(rules.allowed_symptom_scopes) if (rules and rules.allowed_symptom_scopes) else "Sức khỏe chung"
+        complaint_instruction = f"""
+    - TỰ SINH LÝ DO MỞ ĐẦU (chief_complaint): Hãy tự sáng tạo 1 câu lý do mở đầu/yêu cầu ban đầu tự nhiên và ngắn gọn (1-2 câu).
+      + Chỉ dẫn: {instr}
+      + Phạm vi chủ đề cho phép: [{scopes}]
+      + Phải phù hợp với độ tuổi ({selected_age}), nghề nghiệp ({selected_occupation}) và vai trò ({scenario.role}).
+    """
+
+    # 🎲 3. Xử lý logic Hidden Secrets (Bí mật ẩn)
+    has_hardcoded_secrets = scenario.hidden_secrets is not None and len(scenario.hidden_secrets) > 0
+    secret_instruction = ""
+
+    if has_hardcoded_secrets:
+        secret_instruction = f"""
+    - BÍ MẬT ẨN CỐ ĐỊNH: BẮT BUỘC GIỮ NGUYÊN danh sách sau: {scenario.hidden_secrets}
+    """
+    else:
+        sec_rules = scenario.secret_generation_rules
+        min_sec = sec_rules.min_secrets if sec_rules else 1
+        max_sec = sec_rules.max_secrets if sec_rules else 3
+        instr = sec_rules.instruction if sec_rules else "Sinh ra bí mật ẩn liên quan đến vấn đề đang hỏi."
+        topics = ", ".join(sec_rules.secret_topics) if (sec_rules and sec_rules.secret_topics) else "Thông tin ẩn cá nhân"
+        
+        secret_instruction = f"""
+    - TỰ SINH BÍ MẬT ẨN (hidden_secrets): Hãy tự thiết kế từ {min_sec} đến {max_sec} bí mật ẩn/sự thật giấu kín thực tế.
+      + Chỉ dẫn: {instr}
+      + Chủ đề gợi ý: [{topics}]
+      + Các bí mật này BẮT BUỘC phải ăn khớp logic với lý do mở đầu (chief_complaint) và phù hợp hoàn cảnh nhân vật.
+    """
+
+    # Đề tài đồ án (nếu có trong pool student)
+    project_topic_str = ""
+    if pools.project_topics and len(pools.project_topics) > 0:
+        selected_topic = random.choice(pools.project_topics)
+        project_topic_str = f"- Đề tài đồ án / Công việc phụ trách: {selected_topic}"
+
+    # Prompt tổng thể cho Gemini
     prompt_instruction = f"""
-    Bạn là một chuyên gia thiết kế kịch bản mô phỏng tương tác nhân vật.
-    Hãy tạo một hồ sơ nhân vật (CharacterProfile) chi tiết dựa trên các tham số đã bốc ngẫu nhiên sau:
+    Bạn là một chuyên gia thiết kế kịch bản giả lập tương tác nhân vật nhập vai.
+    Hãy tạo một hồ sơ nhân vật (CharacterProfile) chi tiết dựa trên các thông số cấu hình sau:
 
     --- THAM SỐ CỐ ĐỊNH (BẮT BUỘC GIỮ NGUYÊN) ---
     - Tên: {selected_name}
     - Tuổi: {selected_age} (Khoảng: {min_age}-{max_age})
     - Nghề nghiệp: {selected_occupation}
-    - Nét tính cách chủ đạo: {selected_personality}
+    - Nét tính cách: {selected_personality}
+    {project_topic_str}
 
-    --- THÔNG TIN KỊCH BẢN VÀ VAI TRÒ ---
+    --- BỐI CẢNH KỊCH BẢN ---
     - Vai trò nhân vật: {scenario.role}
-    - Bối cảnh chung: {scenario.scenario}
-    - Chi tiết ca: {scenario.case}
-    - Lý do công khai ban đầu (chief_complaint): {scenario.chief_complaint}
-    - Danh sách bí mật ẩn (hidden_secrets): {scenario.hidden_secrets}
+    - Bối cảnh: {scenario.scenario}
+    - Chi tiết tình huống: {scenario.case}
     - Mục tiêu cốt lõi (goal): {scenario.goal}
 
-    Yêu cầu:
-    1. Giữ nguyên Tên, Tuổi, Nghề nghiệp và Tính cách cố định ở trên.
-    2. Viết tiểu sử (background) ngắn gọn (2-3 câu) phù hợp với bối cảnh kịch bản.
-    3. Trả về đúng định dạng JSON theo Schema CharacterProfile.
+    --- QUY TẮC SINH CHIEF COMPLAINT ---
+    {complaint_instruction}
+
+    --- QUY TẮC SINH HIDDEN SECRETS ---
+    {secret_instruction}
+
+    Yêu cầu bổ sung:
+    1. Viết phần tiểu sử (background) ngắn gọn (2-3 câu) liên quan trực tiếp đến nhân vật và tình huống.
+    2. Trả về đúng định dạng Structured Output JSON theo Schema CharacterProfile.
     """
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt_instruction,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=CharacterProfile,
-            temperature=0.85,
-        ),
-    )
+    try:
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt_instruction,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=CharacterProfile,
+                temperature=0.85,
+            ),
+        )
 
-    # Validate và khởi tạo mô hình Pydantic từ kết quả JSON
-    persona_data = json.loads(response.text)
-    persona = CharacterProfile(**persona_data)
-    
-    # Đảm bảo các thuộc tính gốc từ Scenario được lưu giữ đầy đủ
-    if not persona.chief_complaint:
-        persona.chief_complaint = scenario.chief_complaint
-    if not persona.hidden_secrets:
-        persona.hidden_secrets = scenario.hidden_secrets
-    if not persona.goal:
-        persona.goal = scenario.goal
+        persona_data = json.loads(response.text)
+        persona = CharacterProfile(**persona_data)
 
-    return persona
+        # Fallback bổ sung nếu Gemini không điền các trường nền tảng
+        if preselected_complaint and not persona.chief_complaint:
+            persona.chief_complaint = preselected_complaint
+        if has_hardcoded_secrets and not persona.hidden_secrets:
+            persona.hidden_secrets = scenario.hidden_secrets
+        if not persona.goal:
+            persona.goal = scenario.goal
+
+        return persona
+
+    except Exception as e:
+        print(f"⚠️ Lỗi khi gọi Gemini API sinh nhân vật: {e}. Sử dụng Fallback bối cảnh mặc định.")
+        # Fallback an toàn nếu API lỗi
+        return CharacterProfile(
+            name=selected_name,
+            age=selected_age,
+            occupation=selected_occupation,
+            personality=selected_personality,
+            background=f"Nhân vật {selected_name}, {selected_age} tuổi, làm {selected_occupation}.",
+            chief_complaint=preselected_complaint or "Tôi muốn hỏi tư vấn thông tin.",
+            hidden_secrets=scenario.hidden_secrets or ["Chưa khai báo thông tin bệnh nền."],
+            goal=scenario.goal or "Hoàn thành ca tư vấn."
+        )
 
 
 def ask_gemini(system_prompt: str, user_input: str) -> AgentResponse:
@@ -109,11 +182,11 @@ def ask_gemini(system_prompt: str, user_input: str) -> AgentResponse:
     Bắt buộc Gemini trả về Structured JSON tuân thủ AgentResponse Schema.
 
     Args:
-        system_prompt (str): Prompt hệ thống đã dựng (chứa bối cảnh, luật lệ)
-        user_input (str): Tin nhắn hoặc hành động mới nhất của User/Tester
+        system_prompt (str): System prompt tổng quát
+        user_input (str): Tin nhắn hoặc tag hành động từ đối phương
 
     Returns:
-        AgentResponse: Đối tượng AgentResponse chứa reply, new_trust, new_patience, new_stress, conversation_end
+        AgentResponse: Đối tượng AgentResponse (reply, new_trust, new_patience, new_stress, conversation_end)
     """
     response = client.models.generate_content(
         model=GEMINI_MODEL,

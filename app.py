@@ -1,11 +1,11 @@
 """
-app.py - Streamlit UI cho Generic Markdown Scenario Engine
+app.py - Streamlit Dynamic UI cho Generic Markdown Scenario Engine
 
 Giao diện Web động:
-- Tự động quét thư mục scenarios/ và hiển thị Dropdown kịch bản.
-- Hiển thị thông tin kịch bản và Hồ sơ Nhân vật được sinh ngẫu nhiên từ Data Pools.
-- Dynamic Action Bar: Tự động vẽ các nút bấm thao tác dựa trên array user_actions định nghĩa trong file .md.
-- Xử lý ngắt hội thoại: Hiển thị thông báo hoàn thành nếu conversation_end == True HOẶC số turn vượt quá max_turns.
+1. Tự động quét tất cả các file .md trong thư mục scenarios/ và hiển thị Dropdown trên Sidebar.
+2. Khi chuyển kịch bản hoặc nhấn "New Persona / Reset": tự động nạp kịch bản và sinh nhân vật mới (kèm bí mật ẩn tự động nếu có).
+3. Dynamic Action Bar: Render trực tiếp các nút bấm từ danh sách user_actions đọc được từ file .md.
+4. Xử lý ngắt hội thoại: Hiển thị banner kết thúc nếu state["conversation_end"] == True HOẶC turn >= scenario.completion_rules.max_turns.
 """
 
 import streamlit as st
@@ -17,7 +17,7 @@ from state_machine import make_initial_state
 st.set_page_config(page_title="Generic Scenario Engine", page_icon="🎭", layout="wide")
 
 st.title("🎭 Generic Markdown Scenario Engine")
-st.caption("Hệ thống giả lập đa vai trò điều khiển bằng file Markdown (.md) & Gemini AI")
+st.caption("Hệ thống Giả lập Đa Vai trò điều khiển hoàn toàn bằng File Markdown (.md) & Gemini AI")
 
 # ---------------------------------------------------------------------------
 # 1. Quét và Lựa chọn Kịch bản từ thư mục scenarios/
@@ -58,9 +58,9 @@ hs = st.session_state.hidden_state
 scenario = st.session_state.current_scenario
 
 # Sidebar: Chọn kịch bản
-st.sidebar.title("⚙️ Cấu hình Kịch bản")
+st.sidebar.title("⚙️ Chọn Kịch bản (.md)")
 selected_name = st.sidebar.selectbox(
-    "Chọn kịch bản (.md):",
+    "Danh sách kịch bản:",
     options=list(scenarios_map.keys()),
     index=0
 )
@@ -85,7 +85,7 @@ if st.session_state.current_profile is None:
     st.session_state.current_profile = create_agent_persona(scenario)
 
 # Sidebar: Nút Reset Nhân vật
-if st.sidebar.button("🔄 Reset / Sinh Nhân vật mới", use_container_width=True):
+if st.sidebar.button("🔄 New Persona / Reset", use_container_width=True):
     st.session_state.current_profile = reset_agent(st.session_state.hidden_state, scenario)
     st.session_state.messages = []
     st.session_state.dialogue_history = []
@@ -93,16 +93,16 @@ if st.sidebar.button("🔄 Reset / Sinh Nhân vật mới", use_container_width=
     st.session_state.selected_action = None
     st.rerun()
 
-# Sidebar: Thông tin Nhân vật & Kịch bản
+# Sidebar: Thông tin Kịch bản & Nhân vật
 st.sidebar.markdown("---")
-st.sidebar.subheader("📌 Kịch bản Hiện tại")
+st.sidebar.subheader("📌 Thông tin Kịch bản")
 st.sidebar.write(f"**Tiêu đề:** {scenario.title}")
 st.sidebar.write(f"**Vai trò Agent:** `{scenario.role}`")
 st.sidebar.write(f"**Vai trò User:** `{scenario.user_role}`")
 st.sidebar.write(f"**Max Turns:** `{scenario.completion_rules.max_turns}`")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("👤 Hồ sơ Nhân vật (Agent)")
+st.sidebar.subheader("👤 Hồ sơ Nhân vật (Persona)")
 profile = st.session_state.current_profile
 st.sidebar.write(f"**Họ tên:** {profile.name}")
 st.sidebar.write(f"**Tuổi:** {profile.age}")
@@ -126,7 +126,7 @@ for role, content in st.session_state.messages:
 # ---------------------------------------------------------------------------
 # 3. Dynamic Action Bar (Nút bấm thao tác sinh tự động từ user_actions)
 # ---------------------------------------------------------------------------
-st.markdown(f"### ⚡ Thao tác của {scenario.user_role} (Action Bar)")
+st.markdown(f"### ⚡ Action Bar của `{scenario.user_role}`")
 
 user_actions = scenario.user_actions
 if user_actions:
@@ -143,7 +143,7 @@ if st.session_state.selected_action:
     st.info(f"Đã chọn Thao tác: **[{st.session_state.selected_action}]** (Sẽ gắn tag vào tin nhắn tiếp theo)")
 
 # ---------------------------------------------------------------------------
-# 4. Kiểm tra Ngắt Hội thoại (Triple-Layer End Protocol)
+# 4. Cầu chì Ngắt Hội thoại (Triple-Layer End Protocol)
 # ---------------------------------------------------------------------------
 current_turn = len([m for m in st.session_state.messages if m[0] == "user"])
 max_turns = scenario.completion_rules.max_turns
@@ -153,7 +153,7 @@ is_conv_ended = hs.get("conversation_end", False) or is_max_turn_reached
 if is_conv_ended:
     st.markdown("---")
     if is_max_turn_reached and not hs.get("conversation_end", False):
-        st.warning(f"🛑 **Cuộc hội thoại đã ngắt do chạm ngưỡng tối đa {max_turns} turns (Max Turns Limit).**")
+        st.warning(f"🛑 **Cuộc hội thoại đã ngắt do đạt ngưỡng tối đa {max_turns} turns (Max Turns Limit).**")
     else:
         st.success("✅ **Cuộc hội thoại đã kết thúc thành công (Conversation Completed).**")
 
@@ -194,7 +194,7 @@ if message:
     st.session_state.dialogue_history.append({"role": "user", "content": full_user_input})
 
     # Gọi Agent xử lý
-    with st.spinner(f"_{profile.name}_ đang suy nghĩ..."):
+    with st.spinner(f"_{profile.name}_ ({scenario.role}) đang suy nghĩ..."):
         reply, trace_info = ask_agent(
             user_input=full_user_input,
             state=st.session_state.hidden_state,
@@ -218,7 +218,7 @@ if message:
 # ---------------------------------------------------------------------------
 with st.sidebar.expander("🕵️ Xem Sự thật ẩn (Debriefing)"):
     st.write("**Mục tiêu cốt lõi:**", profile.goal)
-    st.write("**Sự thật / Bí mật ẩn:**")
+    st.write("**Bí mật / Sự thật ẩn (Sinh tự động / Cố định):**")
     for s in profile.hidden_secrets:
         st.write(f"- {s}")
 

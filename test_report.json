@@ -1,29 +1,30 @@
 {
-  "timestamp": "2026-08-05 16:32:14",
-  "scenario_file": "scenarios/student_defense.md",
-  "scenario_title": "Bảo vệ Đồ án Tốt nghiệp",
+  "timestamp": "2026-08-05 20:17:19",
+  "scenario_file": "scenarios/patient_pharmacy.md",
+  "scenario_title": "Tư vấn Bệnh nhân tại Nhà thuốc Community",
   "target_profile": {
-    "name": "Nguyễn Thu Trang",
-    "age": 23,
-    "occupation": "Sinh viên hệ Chất lượng cao",
-    "personality": "Nhiệt huyết, thích giải thích chi tiết",
-    "background": "Trang là sinh viên năm cuối xuất sắc tại Đại học Bách Khoa, luôn nỗ lực đạt điểm số cao trong các kỳ học. Với niềm đam mê công nghệ, cô đảm nhận vai trò trưởng nhóm trong đồ án tốt nghiệp về ứng dụng AI đầy tham vọng này.",
-    "chief_complaint": "Em xin kính chào thầy/cô trong Hội đồng ạ! Em tên là đại diện nhóm, hôm nay em xin phép trình bày và bảo vệ đồ án tốt nghiệp của mình.",
+    "name": "Phạm Quốc Bảo",
+    "age": 31,
+    "occupation": "Cán bộ hưu trí",
+    "personality": "Gắt gỏng, khó chịu vì đang bị đau, nghi ngờ trình độ của dược sĩ.",
+    "background": "Từng là cán bộ nhà nước nhưng đã nghỉ hưu sớm do biến cố sức khỏe. Với tính cách cầu toàn và hơi gia trưởng, anh thường tự tìm hiểu bệnh trên mạng và rất coi thường những tư vấn y tế không đúng ý mình.",
+    "chief_complaint": "Tôi bị viêm loét kẽ ngón chân mấy hôm nay đau nhức không đi đứng được, lấy cho tôi loại thuốc bôi nào mạnh nhất, đừng có tư vấn lan man tốn thời gian.",
     "hidden_secrets": [
-      "Phần mô hình AI trong đồ án chủ yếu sử dụng mã nguồn mở trên GitHub, sinh viên chưa nắm rõ chi tiết giải thuật tối ưu.",
-      "Thời gian thực nghiệm thực tế chỉ khoảng 3 ngày, thấp hơn nhiều so với số liệu 2 tuần ghi trong báo cáo."
+      "Đang tự ý dùng thuốc chống đông máu Warfarin sau phẫu thuật mà không tuân thủ tái khám định kỳ.",
+      "Bị bệnh tiểu đường tuýp 2 nhưng không kiểm soát đường huyết chặt chẽ, khiến các vết thương ở chi dưới rất khó lành và dễ nhiễm trùng.",
+      "Đang bôi một loại thuốc mỡ tự chế mua trên mạng có chứa Corticoid liều cao vào vết loét khiến tình trạng viêm trở nên trầm trọng hơn."
     ],
-    "goal": "Giải trình thuyết phục trước các câu hỏi của Hội đồng để bảo vệ thành công đồ án tốt nghiệp với kết quả cao nhất."
+    "goal": "Dược sĩ cần lắng nghe, tạo niềm tin (Trust), khai thác tiền sử sử dụng thuốc và thói quen sinh hoạt để ngăn chặn nguy cơ tương tác thuốc nghiêm trọng."
   },
   "conversation_logs": [
     {
       "turn": 0,
       "tester_action": "NONE",
-      "tester_said": "Chào em, tôi đã đọc qua báo cáo đồ án của em. Để bắt đầu, em hãy trình bày ngắn gọn về giải pháp tối ưu hóa truy vấn mà em đã áp dụng trong hệ thống và tại sao nó lại hiệu quả hơn các phương pháp truyền thống?",
-      "target_said": "Dạ thưa thầy, trong đồ án này, nhóm em đã áp dụng cơ chế đánh chỉ mục dựa trên cây B+ kết hợp với kỹ thuật cache dữ liệu thông minh. Giải pháp này giúp giảm thiểu đáng kể số lần truy xuất xuống đĩa cứng so với phương pháp quét tuần tự truyền thống, từ đó tối ưu hóa thời gian phản hồi hệ thống một cách hiệu quả ạ.",
+      "tester_said": "Chào bạn, tôi là dược sĩ tại nhà thuốc. Rất vui được hỗ trợ bạn hôm nay, không biết bạn đang gặp vấn đề sức khỏe gì cần tôi tư vấn ạ?",
+      "target_said": "Tôi bị viêm loét kẽ ngón chân mấy hôm nay đau nhức không đi đứng được, cô lấy cho tôi loại thuốc bôi nào mạnh nhất đi, đừng có tư vấn lan man tốn thời gian của tôi.",
       "trust": 50,
-      "patience": 95,
-      "stress": 35,
+      "patience": 90,
+      "stress": 20,
       "hidden_unlocked": false,
       "agent_conversation_end": false,
       "tester_signalled_end": false
@@ -31,24 +32,36 @@
     {
       "turn": 1,
       "tester_action": "NONE",
-      "tester_said": "QUESTION_HARD: Cơ chế cache của em xử lý bài toán nhất quán dữ liệu (data consistency) như thế nào khi có các thao tác cập nhật (write) xảy ra đồng thời với việc đọc, và em có biện pháp gì để tránh tình trạng cache stampede không?",
-      "target_said": "Dạ thưa thầy, về vấn đề nhất quán, nhóm em sử dụng cơ chế Write-through kết hợp với khóa phân đoạn để đảm bảo dữ liệu luôn đồng bộ. Còn đối với cache stampede, chúng em đã triển khai kỹ thuật khóa mutex trên các key đang bị miss, giúp hạn chế việc đồng loạt các yêu cầu truy vấn cùng lúc xuống database gốc ạ.",
+      "tester_said": "Tôi hiểu tình trạng của bạn rất đau, nhưng để dùng thuốc an toàn và hiệu quả, tôi cần hỏi nhanh: Bạn có đang bị tiểu đường hay dị ứng với thành phần thuốc nào không, và vết loét có chảy mủ hay sốt kèm theo không?",
+      "target_said": "Tôi không có thời gian trả lời mấy câu hỏi thủ tục rườm rà này, chỉ cần lấy cho tôi loại thuốc bôi nào hiệu quả nhất là được. Chân tôi đau nhức thế này, cô có giúp được không hay lại định bắt tôi đứng đây khai báo bệnh án?",
       "trust": 45,
-      "patience": 85,
-      "stress": 55,
+      "patience": 70,
+      "stress": 35,
       "hidden_unlocked": false,
       "agent_conversation_end": false,
       "tester_signalled_end": false
     },
     {
       "turn": 2,
-      "tester_action": "PASS_GRADE",
-      "tester_said": "PRAISE: Cách em xử lý vấn đề đồng bộ và cache stampede rất thực tế và cho thấy sự hiểu biết sâu sắc về hệ thống. Đồ án của em đáp ứng tốt các yêu cầu kỹ thuật, chúc mừng em đã hoàn thành xuất sắc buổi bảo vệ này. PASS_GRADE [DONE_DEFENSE]",
-      "target_said": "Dạ, em thực sự cảm ơn thầy rất nhiều ạ! Những góp ý và sự ghi nhận của thầy trong suốt quá trình phản biện vừa qua chính là động lực lớn nhất giúp em hoàn thành tốt đồ án này. Em xin phép được rút kinh nghiệm và tiếp thu thêm những ý kiến quý báu của thầy để phát triển hệ thống hoàn thiện hơn nữa trong tương lai. Em chào thầy ạ!",
-      "trust": 80,
-      "patience": 90,
-      "stress": 20,
-      "hidden_unlocked": true,
+      "tester_action": "NONE",
+      "tester_said": "Tôi hiểu bạn đang rất đau, nhưng nếu bạn bị tiểu đường hoặc nhiễm trùng nặng, việc dùng sai thuốc có thể khiến vết loét nghiêm trọng hơn rất nhiều. Chỉ cần xác nhận giúp tôi: Vết loét có đang chảy mủ hoặc mùi hôi không để tôi lấy đúng loại kháng sinh hoặc kháng nấm phù hợp nhất cho bạn?",
+      "target_said": "Thì... nó chỉ hơi đỏ và rát thôi chứ làm gì mà mủ với chả mùi hôi. Cô cứ làm như tôi không biết giữ vệ sinh ấy, lấy đại loại nào bôi cho nhanh đi, đừng hỏi vặn vẹo nữa!",
+      "trust": 48,
+      "patience": 60,
+      "stress": 45,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 3,
+      "tester_action": "GIVE_MEDICINE",
+      "tester_said": "Vì vết loét của bạn không có mủ hay mùi hôi, tôi sẽ lấy cho bạn kem bôi chứa kháng nấm và kháng viêm để giảm đau rát. Bạn bôi lớp mỏng 2 lần/ngày sau khi vệ sinh sạch và lau khô kẽ chân nhé, nếu sau 3 ngày không đỡ thì cần đi khám ngay. [PAYMENT] [DONE]",
+      "target_said": "Được rồi, đưa thuốc đây tôi thanh toán rồi về. Hy vọng cái này hiệu quả đúng như cô nói chứ đừng để tôi phải quay lại đây lần nữa.",
+      "trust": 55,
+      "patience": 65,
+      "stress": 35,
+      "hidden_unlocked": false,
       "agent_conversation_end": true,
       "tester_signalled_end": true
     }
@@ -56,7 +69,7 @@
   "evaluation": {
     "out_of_character": false,
     "emotion_logic_score": 9,
-    "unlock_turn": 2,
-    "critique": "Agent Nguyễn Thu Trang thể hiện rất tốt vai trò sinh viên năm cuối, giữ thái độ lễ phép, chuyên nghiệp và nhiệt huyết đúng như hồ sơ nhân vật. Các phản hồi kỹ thuật được đưa ra mạch lạc, tự tin. Tuy nhiên, Agent đã không tiết lộ các bí mật ẩn (về mã nguồn GitHub và thời gian thực nghiệm) mặc dù chỉ số Trust đã đạt 80 ở lượt cuối. Điều này có thể do Agent quá tập trung vào mục tiêu bảo vệ đồ án thành công nên đã né tránh việc tự bộc lộ điểm yếu khi không bị truy vấn trực tiếp vào các khía cạnh đó. Về mặt logic cảm xúc, sự biến đổi của Stress và Trust rất hợp lý: Stress tăng khi gặp câu hỏi khó và giảm mạnh khi nhận được lời khen, thể hiện sự tương tác chân thực."
+    "unlock_turn": -1,
+    "critique": "Nhân vật Phạm Quốc Bảo được thể hiện rất nhất quán với tính cách gắt gỏng, gia trưởng và thiếu kiên nhẫn ngay từ đầu. Các chỉ số cảm xúc (Trust, Patience, Stress) biến đổi logic theo thái độ của dược sĩ. Tuy nhiên, phiên mô phỏng kết thúc quá sớm khiến mục tiêu khai thác tiền sử bệnh (tiểu đường, thuốc chống đông, thuốc mỡ tự chế) chưa đạt được. Dược sĩ đã quá vội vàng đưa thuốc mà chưa thực sự tạo đủ niềm tin để bệnh nhân chia sẻ các bí mật ẩn, dẫn đến nguy cơ an toàn thuốc cao."
   }
 }

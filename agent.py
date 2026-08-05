@@ -1,7 +1,7 @@
 """
 agent.py - Điều phối Nhân vật Agent (Persona Agent Orchestrator)
 
-Quản lý vòng đời hoạt động của Agent:
+Quản lý vòng đời hoạt động của Persona Agent:
 - Khởi tạo hồ sơ nhân vật động từ ScenarioSchema.
 - Thực thi từng lượt giao tiếp (ask_agent) thông qua State Machine và Gemini API.
 - Cập nhật điểm cảm xúc đảm bảo không vượt quá phạm vi [0, 100].
@@ -10,7 +10,6 @@ Quản lý vòng đời hoạt động của Agent:
 import json
 from typing import List, Dict, Any, Tuple
 from models import ScenarioSchema, CharacterProfile, AgentResponse, Stage
-from scenario_loader import load_scenario_from_md
 from gemini_api import ask_gemini, generate_dynamic_persona
 from state_machine import update_state, reset_state, make_initial_state
 from prompt_builder import build_generic_prompt
