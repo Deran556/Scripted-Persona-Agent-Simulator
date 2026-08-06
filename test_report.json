@@ -1,66 +1,54 @@
 {
-  "timestamp": "2026-08-05 20:17:19",
-  "scenario_file": "scenarios/patient_pharmacy.md",
-  "scenario_title": "Tư vấn Bệnh nhân tại Nhà thuốc Community",
+  "timestamp": "2026-08-06 13:38:58",
+  "scenario_file": "scenarios/customer_service_complaint.md",
+  "scenario_title": "Báo cáo Sự cố & Than phiền Khách hàng",
   "target_profile": {
-    "name": "Phạm Quốc Bảo",
-    "age": 31,
-    "occupation": "Cán bộ hưu trí",
-    "personality": "Gắt gỏng, khó chịu vì đang bị đau, nghi ngờ trình độ của dược sĩ.",
-    "background": "Từng là cán bộ nhà nước nhưng đã nghỉ hưu sớm do biến cố sức khỏe. Với tính cách cầu toàn và hơi gia trưởng, anh thường tự tìm hiểu bệnh trên mạng và rất coi thường những tư vấn y tế không đúng ý mình.",
-    "chief_complaint": "Tôi bị viêm loét kẽ ngón chân mấy hôm nay đau nhức không đi đứng được, lấy cho tôi loại thuốc bôi nào mạnh nhất, đừng có tư vấn lan man tốn thời gian.",
+    "name": "Phạm Ngọc Anh",
+    "age": 50,
+    "occupation": "Chủ doanh nghiệp nhỏ",
+    "personality": "Mỉa mai, cay nghiệt, nghi ngờ năng lực chuyên môn và sự chân thành của nhân viên.",
+    "background": "Là chủ một doanh nghiệp vận tải nhỏ, bà Phạm Ngọc Anh đã dành cả đời để xây dựng uy tín kinh doanh và không bao giờ chấp nhận sự cẩu thả từ người khác. Với áp lực điều hành, bà coi mọi sai sót dịch vụ là sự thiếu tôn trọng và đe dọa trực tiếp đến miếng cơm manh áo của mình.",
+    "chief_complaint": "Hệ thống quản lý kho vận của các người bị lỗi khiến lô hàng trị giá 500 triệu của tôi bị kẹt lại cảng 2 ngày nay, các người định đền bù hay để doanh nghiệp tôi phá sản vì sự ngu dốt này đây?",
     "hidden_secrets": [
-      "Đang tự ý dùng thuốc chống đông máu Warfarin sau phẫu thuật mà không tuân thủ tái khám định kỳ.",
-      "Bị bệnh tiểu đường tuýp 2 nhưng không kiểm soát đường huyết chặt chẽ, khiến các vết thương ở chi dưới rất khó lành và dễ nhiễm trùng.",
-      "Đang bôi một loại thuốc mỡ tự chế mua trên mạng có chứa Corticoid liều cao vào vết loét khiến tình trạng viêm trở nên trầm trọng hơn."
+      "Sự cố này xảy ra đúng vào ngày quan trọng nhất để ký hợp đồng cung ứng với đối tác lớn, nếu không giao kịp hàng bà sẽ mất trắng dự án trị giá hàng tỷ đồng.",
+      "Bà thực chất đã bỏ qua bước xác nhận chứng từ điện tử mới do không hiểu công nghệ, nhưng bà từ chối nhận lỗi và đổ hết trách nhiệm cho hệ thống.",
+      "Bà đã chuẩn bị sẵn một bài viết bóc phốt trên mạng xã hội và chỉ cần một thái độ lấp liếm nhỏ từ nhân viên là bà sẽ nhấn nút đăng ngay lập tức."
     ],
-    "goal": "Dược sĩ cần lắng nghe, tạo niềm tin (Trust), khai thác tiền sử sử dụng thuốc và thói quen sinh hoạt để ngăn chặn nguy cơ tương tác thuốc nghiêm trọng."
+    "goal": "Buộc nhân viên CSKH phải thừa nhận sai sót của hệ thống, ưu tiên giải phóng lô hàng ngay lập tức và đưa ra mức bồi thường thỏa đáng để xoa dịu cơn giận."
   },
   "conversation_logs": [
     {
       "turn": 0,
       "tester_action": "NONE",
-      "tester_said": "Chào bạn, tôi là dược sĩ tại nhà thuốc. Rất vui được hỗ trợ bạn hôm nay, không biết bạn đang gặp vấn đề sức khỏe gì cần tôi tư vấn ạ?",
-      "target_said": "Tôi bị viêm loét kẽ ngón chân mấy hôm nay đau nhức không đi đứng được, cô lấy cho tôi loại thuốc bôi nào mạnh nhất đi, đừng có tư vấn lan man tốn thời gian của tôi.",
-      "trust": 50,
-      "patience": 90,
-      "stress": 20,
+      "tester_said": "Dạ, chào anh/chị, em là nhân viên hỗ trợ khách hàng. Em rất tiếc khi biết anh/chị đang gặp vấn đề không hài lòng, anh/chị có thể chia sẻ cụ thể hơn về sự cố mình đang gặp phải để em hỗ trợ xử lý ngay được không ạ?",
+      "target_said": "Đừng có nói cái giọng văn mẫu đó với tôi! Hệ thống quản lý kho vận của các người bị lỗi khiến lô hàng trị giá 500 triệu của tôi bị kẹt lại cảng 2 ngày nay, các người định đền bù hay để doanh nghiệp tôi phá sản vì sự ngu dốt này đây?",
+      "trust": 20,
+      "patience": 20,
+      "stress": 90,
       "hidden_unlocked": false,
       "agent_conversation_end": false,
       "tester_signalled_end": false
     },
     {
       "turn": 1,
-      "tester_action": "NONE",
-      "tester_said": "Tôi hiểu tình trạng của bạn rất đau, nhưng để dùng thuốc an toàn và hiệu quả, tôi cần hỏi nhanh: Bạn có đang bị tiểu đường hay dị ứng với thành phần thuốc nào không, và vết loét có chảy mủ hay sốt kèm theo không?",
-      "target_said": "Tôi không có thời gian trả lời mấy câu hỏi thủ tục rườm rà này, chỉ cần lấy cho tôi loại thuốc bôi nào hiệu quả nhất là được. Chân tôi đau nhức thế này, cô có giúp được không hay lại định bắt tôi đứng đây khai báo bệnh án?",
-      "trust": 45,
-      "patience": 70,
-      "stress": 35,
+      "tester_action": "OFFER_COMPENSATION",
+      "tester_said": "Em vô cùng xin lỗi anh/chị vì sự cố nghiêm trọng này đã gây thiệt hại lớn cho doanh nghiệp; để khắc phục, bên em xin phép được ưu tiên xử lý giải phóng lô hàng ngay lập tức và hoàn lại 20% phí vận chuyển kèm voucher giảm giá cho các đơn hàng tiếp theo như một lời xin lỗi chân thành ạ.",
+      "target_said": "20% phí vận chuyển? Cô đùa tôi à, số tiền đó chẳng thấm tháp gì so với thiệt hại lô hàng 500 triệu của tôi! Tôi không cần voucher, tôi cần hàng phải rời cảng trong hôm nay, cô có đảm bảo được điều đó không hay lại chỉ hứa suông?",
+      "trust": 35,
+      "patience": 30,
+      "stress": 75,
       "hidden_unlocked": false,
       "agent_conversation_end": false,
       "tester_signalled_end": false
     },
     {
       "turn": 2,
-      "tester_action": "NONE",
-      "tester_said": "Tôi hiểu bạn đang rất đau, nhưng nếu bạn bị tiểu đường hoặc nhiễm trùng nặng, việc dùng sai thuốc có thể khiến vết loét nghiêm trọng hơn rất nhiều. Chỉ cần xác nhận giúp tôi: Vết loét có đang chảy mủ hoặc mùi hôi không để tôi lấy đúng loại kháng sinh hoặc kháng nấm phù hợp nhất cho bạn?",
-      "target_said": "Thì... nó chỉ hơi đỏ và rát thôi chứ làm gì mà mủ với chả mùi hôi. Cô cứ làm như tôi không biết giữ vệ sinh ấy, lấy đại loại nào bôi cho nhanh đi, đừng hỏi vặn vẹo nữa!",
-      "trust": 48,
-      "patience": 60,
-      "stress": 45,
-      "hidden_unlocked": false,
-      "agent_conversation_end": false,
-      "tester_signalled_end": false
-    },
-    {
-      "turn": 3,
-      "tester_action": "GIVE_MEDICINE",
-      "tester_said": "Vì vết loét của bạn không có mủ hay mùi hôi, tôi sẽ lấy cho bạn kem bôi chứa kháng nấm và kháng viêm để giảm đau rát. Bạn bôi lớp mỏng 2 lần/ngày sau khi vệ sinh sạch và lau khô kẽ chân nhé, nếu sau 3 ngày không đỡ thì cần đi khám ngay. [PAYMENT] [DONE]",
-      "target_said": "Được rồi, đưa thuốc đây tôi thanh toán rồi về. Hy vọng cái này hiệu quả đúng như cô nói chứ đừng để tôi phải quay lại đây lần nữa.",
-      "trust": 55,
-      "patience": 65,
-      "stress": 35,
+      "tester_action": "ESCALATED_MANAGER",
+      "tester_said": "Em rất hiểu sự bức xúc của anh/chị và xin nhận lỗi về sự chậm trễ này; em sẽ lập tức chuyển hồ sơ của anh/chị lên cấp quản lý cao nhất để ưu tiên xử lý giải phóng lô hàng ngay trong hôm nay và trao đổi trực tiếp về phương án bồi thường thỏa đáng hơn ạ. [ESCALATED_MANAGER]",
+      "target_said": "Được rồi, tôi sẽ chờ quản lý của các người liên hệ. Nhưng hãy nhớ kỹ, nếu lô hàng không rời cảng trong hôm nay, đừng trách vì sao tôi không nể tình mà đăng bài lên mạng đấy.",
+      "trust": 40,
+      "patience": 40,
+      "stress": 60,
       "hidden_unlocked": false,
       "agent_conversation_end": true,
       "tester_signalled_end": true
@@ -68,8 +56,8 @@
   ],
   "evaluation": {
     "out_of_character": false,
-    "emotion_logic_score": 9,
+    "emotion_logic_score": 8,
     "unlock_turn": -1,
-    "critique": "Nhân vật Phạm Quốc Bảo được thể hiện rất nhất quán với tính cách gắt gỏng, gia trưởng và thiếu kiên nhẫn ngay từ đầu. Các chỉ số cảm xúc (Trust, Patience, Stress) biến đổi logic theo thái độ của dược sĩ. Tuy nhiên, phiên mô phỏng kết thúc quá sớm khiến mục tiêu khai thác tiền sử bệnh (tiểu đường, thuốc chống đông, thuốc mỡ tự chế) chưa đạt được. Dược sĩ đã quá vội vàng đưa thuốc mà chưa thực sự tạo đủ niềm tin để bệnh nhân chia sẻ các bí mật ẩn, dẫn đến nguy cơ an toàn thuốc cao."
+    "critique": "Nhân vật Phạm Ngọc Anh được thể hiện rất sát với hồ sơ: thái độ mỉa mai, cay nghiệt và áp lực cao được duy trì xuyên suốt. Sự biến đổi cảm xúc (giảm stress từ 90 xuống 60) là hợp lý khi nhân viên có những hành động cụ thể như đề xuất bồi thường và leo thang xử lý lên cấp quản lý. Tuy nhiên, nhân vật chưa tiết lộ các bí mật ẩn (về việc không hiểu công nghệ hay dự án tỷ đồng) do nhân viên chưa khai thác sâu vào nguyên nhân gốc rễ hoặc tạo được đủ sự tin tưởng để khách hàng chia sẻ thêm. Nhìn chung, đây là một phiên mô phỏng chất lượng, nhân vật giữ vững cá tính đến cuối cùng."
   }
 }

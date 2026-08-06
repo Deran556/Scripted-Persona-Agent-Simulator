@@ -17,7 +17,7 @@ dynamic_pools:
     - "Phan Như Quỳnh"
     - "Nguyễn Văn An"
     - "Đặng Hương Giang"
-    - "Hoàng Ngọc điệp"
+    - "Hoàng Ngọc Điệp"
     - "Lý Hải Thành"
   age_ranges:
     - [18, 25]
