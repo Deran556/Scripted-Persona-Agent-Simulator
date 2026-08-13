@@ -222,7 +222,7 @@ Hãy chấm điểm phiên mô phỏng.
 # ===========================================================================
 # 4. Thực thi Mô phỏng & Cầu chì ngắt 3 lớp (Triple-Layer End Protocol)
 # ===========================================================================
-def run_automated_test(scenario_path: str = "scenarios/student_defense.md", report_path: str = "test_report.json") -> Dict[str, Any]:
+def run_automated_test(scenario_path: str = "scenarios/patient_pharmacy.md", report_path: str = "test_report.json") -> Dict[str, Any]:
     """
     Thực thi vòng lặp test tự động LLM-vs-LLM với Cầu chì ngắt 3 lớp (Triple-Layer End Protocol).
     """
