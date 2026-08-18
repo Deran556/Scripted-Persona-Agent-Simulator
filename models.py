@@ -70,7 +70,7 @@ class SecretGenerationRules(BaseModel):
     """
     Cấu hình cho phép Gemini AI tự động sinh ngẫu nhiên 1-3 bí mật ẩn dựa theo các chủ đề (Topics).
     """
-    min_secrets: int = Field(default=1, description="Số lượng bí mật tối thiểu cần sinh")
+    min_secrets: int = Field(default=0, description="Số lượng bí mật tối thiểu cần sinh")
     max_secrets: int = Field(default=3, description="Số lượng bí mật tối đa cần sinh")
     instruction: str = Field(
         default="Sinh ra bí mật ẩn liên quan đến vấn đề đang hỏi và hoàn cảnh nhân vật.",

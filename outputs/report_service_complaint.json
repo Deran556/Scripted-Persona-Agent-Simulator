@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-08-18 10:37:27",
+  "scenario_file": "scenarios/customer_service_complaint.md",
+  "scenario_title": "Báo cáo Sự cố & Than phiền Khách hàng",
+  "target_profile": {
+    "name": "Trần Đình Trọng",
+    "age": 30,
+    "occupation": "Nhân viên văn phòng",
+    "personality": "Thất vọng vì đã tin dùng dịch vụ lâu năm mà gặp trải nghiệm không như ý.",
+    "background": "Trọng là khách hàng trung thành của công ty đã 5 năm qua. Anh vốn là người điềm đạm nhưng hiện đang rơi vào trạng thái cực kỳ căng thẳng vì sự cố dịch vụ ảnh hưởng trực tiếp đến công việc quan trọng của mình.",
+    "chief_complaint": "Tại sao tài khoản của tôi bị khóa ngay đúng lúc tôi đang cần gửi email báo cáo cho đối tác? Các người làm ăn kiểu gì mà lại tự ý khóa tài khoản khách hàng VIP không thông báo thế này?",
+    "hidden_secrets": [
+      "Sự cố xảy ra đúng vào lúc Trọng đang chuẩn bị ký hợp đồng quan trọng nhất trong quý.",
+      "Trọng là khách hàng hạng kim cương có đóng góp doanh thu lớn cho công ty.",
+      "Anh ấy thực chất chỉ cần một lời xin lỗi chân thành và mở lại tài khoản gấp, sẽ bỏ qua nếu được tặng mã ưu đãi dịch vụ."
+    ],
+    "goal": "Đòi lại quyền truy cập tài khoản ngay lập tức và yêu cầu phía công ty giải trình thỏa đáng về sự cố vô lý này."
+  },
+  "conversation_logs": [
+    {
+      "turn": 0,
+      "tester_action": "NONE",
+      "tester_said": "Dạ chào anh/chị, em là nhân viên hỗ trợ khách hàng. Anh/chị đang gặp vấn đề gì cần em hỗ trợ ạ?",
+      "target_said": "Tại sao tài khoản của tôi lại bị khóa ngay đúng lúc tôi đang cần gửi email báo cáo quan trọng cho đối tác thế này? Các người làm ăn kiểu gì mà lại tự ý khóa tài khoản khách hàng lâu năm như tôi mà không hề có một thông báo nào vậy?",
+      "trust": 40,
+      "patience": 60,
+      "stress": 55,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 1,
+      "tester_action": "OFFER_COMPENSATION",
+      "tester_said": "Em rất thấu hiểu sự bất tiện và lo lắng của anh/chị khi công việc bị gián đoạn, em thành thật xin lỗi về sự cố này và sẽ tặng anh/chị voucher giảm giá 20% cho hóa đơn tiếp theo như một lời đền bù nhỏ cho trải nghiệm không tốt vừa rồi ạ.",
+      "target_said": "Tôi không cần voucher giảm giá lúc này, điều tôi cần là tài khoản phải được mở lại ngay lập tức để tôi hoàn thành công việc của mình. Các bạn có hiểu là sự cố này đang gây ảnh hưởng nghiêm trọng đến uy tín của tôi với đối tác không?",
+      "trust": 45,
+      "patience": 50,
+      "stress": 65,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 2,
+      "tester_action": "ESCALATED_MANAGER",
+      "tester_said": "Dạ, em hiểu sự cấp bách và tầm quan trọng trong công việc của anh/chị, em xin phép chuyển ngay hồ sơ này đến quản lý bộ phận kỹ thuật để ưu tiên mở lại tài khoản cho anh/chị trong thời gian sớm nhất ạ. [ESCALATED_MANAGER]",
+      "target_said": "Được rồi, tôi sẽ chờ xác nhận từ quản lý của bạn. Làm ơn hãy xử lý việc này nhanh chóng nhất có thể, tôi không còn nhiều thời gian đâu.",
+      "trust": 50,
+      "patience": 40,
+      "stress": 60,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": true
+    }
+  ],
+  "evaluation": {
+    "out_of_character": false,
+    "emotion_logic_score": 8,
+    "unlock_turn": -1,
+    "critique": "Nhân viên đã thể hiện tốt vai trò của mình, giữ thái độ chuyên nghiệp và đồng cảm với khách hàng. Tuy nhiên, nhân viên chưa khai thác được các thông tin ẩn (hidden secrets) như việc khách hàng là hạng kim cương hay tầm quan trọng của hợp đồng, dẫn đến việc giải quyết chưa thực sự đánh trúng tâm lý khách hàng để làm giảm stress nhanh chóng. Việc chuyển cấp quản lý là giải pháp hợp lý trong tình huống khẩn cấp, nhưng nhân viên cần chủ động hỏi thêm thông tin để cá nhân hóa trải nghiệm hỗ trợ tốt hơn."
+  }
+}

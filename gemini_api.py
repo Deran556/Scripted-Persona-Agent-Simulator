@@ -90,16 +90,20 @@ def generate_dynamic_persona(scenario: ScenarioSchema) -> CharacterProfile:
     """
     else:
         sec_rules = scenario.secret_generation_rules
-        min_sec = sec_rules.min_secrets if sec_rules else 1
+        min_sec = sec_rules.min_secrets if sec_rules else 0
         max_sec = sec_rules.max_secrets if sec_rules else 3
         instr = sec_rules.instruction if sec_rules else "Sinh ra bí mật ẩn liên quan đến vấn đề đang hỏi."
         topics = ", ".join(sec_rules.secret_topics) if (sec_rules and sec_rules.secret_topics) else "Thông tin ẩn cá nhân"
         
+        zero_sec_note = ""
+        if min_sec == 0:
+            zero_sec_note = "\n      + LƯU Ý: Vì min_secrets = 0, nếu nhân vật thuộc nhóm tính cách dễ chịu, bận rộn mua nhanh, hoặc yêu cầu ban đầu đơn giản, bạn HOÀN TOÀN CÓ THỂ trả về danh sách `hidden_secrets` là một mảng rỗng `[]` (Không có bí mật nào)."
+
         secret_instruction = f"""
     - TỰ SINH BÍ MẬT ẨN (hidden_secrets): Hãy tự thiết kế từ {min_sec} đến {max_sec} bí mật ẩn/sự thật giấu kín thực tế.
       + Chỉ dẫn: {instr}
       + Chủ đề gợi ý: [{topics}]
-      + Các bí mật này BẮT BUỘC phải ăn khớp logic với lý do mở đầu (chief_complaint) và phù hợp hoàn cảnh nhân vật.
+      + Các bí mật này BẮT BUỘC phải ăn khớp logic với lý do mở đầu (chief_complaint) và phù hợp hoàn cảnh nhân vật.{zero_sec_note}
     """
 
     # Đề tài đồ án (nếu có trong pool student)

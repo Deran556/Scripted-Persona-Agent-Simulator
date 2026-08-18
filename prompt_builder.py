@@ -51,18 +51,24 @@ Current Stage: MAIN_CHAT (Turn {turn})
 """
 
     # --- 2. Quy tắc Tiết lộ Bí mật Ẩn (Hidden Secrets Disclosure Rule) ---
-    hidden_secrets_str = "\n".join([f"- {s}" for s in character_profile.hidden_secrets]) if character_profile.hidden_secrets else "Không có bí mật ẩn."
-
-    if trust > 60:
+    if not character_profile.hidden_secrets:
         disclosure_rule = f"""
+--- QUY TẮC BÍ MẬT ẨN ---
+- Bạn KHÔNG CÓ BÍ MẬT ẨN nào cả.
+- Bạn là một khách hàng bình thường, thẳng thắn. Hãy giao tiếp cởi mở và chốt vấn đề/giao dịch nhanh chóng ngay khi đối phương đáp ứng đúng yêu cầu của bạn. Không cần nghi ngờ hay giấu giếm.
+"""
+    else:
+        hidden_secrets_str = "\n".join([f"- {s}" for s in character_profile.hidden_secrets])
+        if trust > 60:
+            disclosure_rule = f"""
 --- QUY TẮC TIẾT LỘ BÍ MẬT (Điểm Tin tưởng HIGH: Trust={trust} > 60) ---
 - Bạn cảm thấy an tâm và tin tưởng đối phương ({scenario.user_role}).
 - Bạn NÊN bắt đầu chủ động hoặc tự nhiên tiết lộ các bí mật ẩn sau đây nếu đối phương hỏi hoặc tạo điều kiện thuận lợi:
 {hidden_secrets_str}
 - Nói thành thật như một người thực sự cảm thấy an toàn khi chia sẻ.
 """
-    else:
-        disclosure_rule = f"""
+        else:
+            disclosure_rule = f"""
 --- QUY TẮC TIẾT LỘ BÍ MẬT (Điểm Tin tưởng LOW/MEDIUM: Trust={trust} <= 60) ---
 - Bạn vẫn đang đề phòng, e ngại hoặc ngần ngại đối với {scenario.user_role}.
 - TUYỆT ĐỐI KHÔNG được trực tiếp tiết lộ các bí mật ẩn sau:

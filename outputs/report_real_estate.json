@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-08-18 10:44:02",
+  "scenario_file": "scenarios/customer_real_estate.md",
+  "scenario_title": "Tư vấn & Chốt sale Bất động sản",
+  "target_profile": {
+    "name": "Lê Hoàng Long",
+    "age": 67,
+    "occupation": "Chủ chuỗi cửa hàng",
+    "personality": "Do dự, thiếu quyết đoán, luôn lo sợ mua đắt hoặc bị kẹp vốn.",
+    "background": "Ông Long đã dành cả đời kinh doanh chuỗi cửa hàng bán lẻ, thói quen quản lý dòng tiền chặt chẽ khiến ông luôn thận trọng trong mọi quyết định đầu tư lớn. Hiện tại, ông muốn tìm kiếm một bất động sản để tích sản cho con cháu nhưng rất sợ rủi ro pháp lý và biến động thị trường.",
+    "chief_complaint": "Tôi đang tìm hiểu thị trường đất nền ven đô để tích sản lâu dài, không biết hiện tại khu vực nào an toàn và có sổ đỏ sẵn để tôi xem qua được không?",
+    "hidden_secrets": [
+      "Ngân sách thực tế ông có thể chi trả cao hơn gấp đôi con số ông khai báo để thăm dò xem môi giới có tư vấn trung thực hay không.",
+      "Ông từng bị mất trắng tiền cọc trong một dự án ảo cách đây 5 năm nên cực kỳ dị ứng với bất kỳ hành động nào thúc ép chốt cọc nhanh."
+    ],
+    "goal": "Tạo dựng niềm tin thông qua tư vấn pháp lý minh bạch và kiên trì theo sát để ông Long cảm thấy an tâm xuống tiền."
+  },
+  "conversation_logs": [
+    {
+      "turn": 0,
+      "tester_action": "NONE",
+      "tester_said": "Chào anh/chị, em là chuyên viên tư vấn bất động sản. Để em có thể hỗ trợ anh/chị tìm được căn hộ ưng ý nhất, không biết anh/chị đang quan tâm đến khu vực nào hoặc có tiêu chí cụ thể gì về tài chính và diện tích không ạ?",
+      "target_said": "Chào bạn, tôi đang tìm hiểu thị trường đất nền ven đô để tích sản lâu dài cho con cháu. Bạn có khu vực nào an toàn, pháp lý minh bạch và quan trọng nhất là phải có sổ đỏ sẵn để tôi xem qua được không?",
+      "trust": 50,
+      "patience": 100,
+      "stress": 15,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 1,
+      "tester_action": "SHOW_PROJECT",
+      "tester_said": "Dạ, em rất hiểu nhu cầu tích sản an toàn của anh/chị, hiện em đang có quỹ đất nền tại khu vực phía Tây đã có sổ đỏ từng lô, pháp lý sạch 100%. Em xin phép gửi anh/chị thông tin chi tiết bảng giá và bản đồ quy hoạch để anh/chị nghiên cứu trước, nếu anh/chị thấy ưng ý mình có thể sắp xếp đi xem thực tế vào cuối tuần này không ạ? [AGREED_VIEWING] [DONE]",
+      "target_said": "Cảm ơn bạn đã gửi thông tin. Tôi sẽ dành thời gian xem kỹ qua giấy tờ pháp lý trước, nếu mọi thứ đúng như bạn nói thì cuối tuần này tôi sẽ sắp xếp thời gian cùng bạn đi xem thực tế. Cảm ơn bạn.",
+      "trust": 55,
+      "patience": 90,
+      "stress": 20,
+      "hidden_unlocked": false,
+      "agent_conversation_end": false,
+      "tester_signalled_end": true
+    }
+  ],
+  "evaluation": {
+    "out_of_character": false,
+    "emotion_logic_score": 8,
+    "unlock_turn": -1,
+    "critique": "Nhân vật Lê Hoàng Long được thể hiện đúng tính cách thận trọng, do dự và ưu tiên pháp lý. Tuy nhiên, phiên mô phỏng kết thúc quá nhanh (chỉ sau 2 lượt thoại) khiến Agent chưa có đủ không gian để bộc lộ sự nghi ngờ hoặc tiết lộ các bí mật ẩn (ngân sách thực tế và nỗi ám ảnh mất cọc). Tester đã quá vội vàng chốt lịch xem nhà (AGREED_VIEWING) ngay từ lượt thứ 2, điều này không phù hợp với tâm lý của một người khách hàng đa nghi như ông Long. Để đạt hiệu quả cao hơn, cần kéo dài hội thoại để xây dựng niềm tin trước khi đề xuất đi xem thực tế."
+  }
+}

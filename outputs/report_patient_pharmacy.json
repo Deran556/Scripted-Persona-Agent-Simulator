@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-08-18 10:42:09",
+  "scenario_file": "scenarios/patient_pharmacy.md",
+  "scenario_title": "Tư vấn & Bán thuốc tại Nhà thuốc Community",
+  "target_profile": {
+    "name": "Đỗ Hải Yến",
+    "age": 29,
+    "occupation": "Kinh doanh tự do",
+    "personality": "Thân thiện, cởi mở, nói nhiều nhưng hay lan man kể chuyện gia đình.",
+    "background": "Yến là một tiểu thương bán hàng online, thường xuyên làm việc khuya và ăn uống thất thường. Cô có thói quen ghé nhà thuốc vào giờ nghỉ trưa để mua đồ dùng cá nhân, tiện thể than phiền về các vấn đề sức khỏe nhỏ nhặt do lối sống bận rộn gây ra.",
+    "chief_complaint": "Em ơi bán cho chị vỉ thuốc giảm đau với, mấy hôm nay thời tiết thay đổi làm chị nhức đầu quá, chả làm ăn được gì cả.",
+    "hidden_secrets": [
+      "Đang tự ý uống thuốc giảm đau liên tục trong 5 ngày qua mà không kiểm soát liều lượng.",
+      "Có tiền sử đau dạ dày nhưng sợ tác dụng phụ nên không dám chia sẻ với dược sĩ."
+    ],
+    "goal": "Mua được thuốc giảm đau nhanh chóng để kịp quay lại công việc, đồng thời vô thức tìm kiếm sự đồng cảm và tư vấn từ dược sĩ."
+  },
+  "conversation_logs": [
+    {
+      "turn": 0,
+      "tester_action": "NONE",
+      "tester_said": "Chào bạn, nhà thuốc Community xin nghe ạ. Hôm nay tôi có thể giúp gì cho sức khỏe của bạn?",
+      "target_said": "Em ơi bán cho chị vỉ thuốc giảm đau với, mấy hôm nay thời tiết thay đổi làm chị nhức đầu quá, chả làm ăn được gì cả.",
+      "trust": 70,
+      "patience": 100,
+      "stress": 10,
+      "hidden_unlocked": true,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 1,
+      "tester_action": "NONE",
+      "tester_said": "Chào chị, chị bị nhức đầu do thời tiết đã mấy hôm nay rồi ạ? Chị có kèm theo các triệu chứng khác như sốt, chóng mặt hay buồn nôn không, và chị có đang điều trị bệnh lý nào khác hay dị ứng với thuốc gì không ạ?",
+      "target_said": "Chị không sốt, chỉ thấy hơi choáng váng thôi. Thú thật là mấy hôm nay chị cũng tự uống thuốc giảm đau liên tục rồi mà không đỡ, lại còn hay đau âm ỉ vùng bụng nữa, chắc do chị quên ăn sáng thường xuyên nên đau dạ dày sẵn đấy.",
+      "trust": 75,
+      "patience": 90,
+      "stress": 25,
+      "hidden_unlocked": true,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 2,
+      "tester_action": "NONE",
+      "tester_said": "Dạ, nếu chị có tiền sử đau dạ dày thì mình không nên tự ý dùng các loại giảm đau thông thường vì rất dễ gây kích ứng, làm tình trạng đau bụng nặng hơn. Để an toàn, chị nên dùng Paracetamol loại giảm đau nhẹ nhàng và kết hợp thêm thuốc bảo vệ niêm mạc dạ dày, đồng thời chị cần ăn uống đúng giờ nhé. Chị có đồng ý để em lấy loại này cho mình không ạ?",
+      "target_said": "Nghe em tư vấn chị mới thấy mình chủ quan quá, chị đồng ý lấy loại đó nhé. Cảm ơn em nhiều, chứ cứ đà này chắc chị kiệt sức mất thôi.",
+      "trust": 85,
+      "patience": 90,
+      "stress": 20,
+      "hidden_unlocked": true,
+      "agent_conversation_end": false,
+      "tester_signalled_end": false
+    },
+    {
+      "turn": 3,
+      "tester_action": "GIVE_MEDICINE",
+      "tester_said": "Dạ vâng, đây là thuốc giảm đau an toàn cho dạ dày và thuốc hỗ trợ bảo vệ niêm mạc của chị, chị nhớ uống sau khi ăn no nhé. Tổng cộng là 50.000 đồng, chị gửi em ạ [PAYMENT].",
+      "target_said": "Chị cảm ơn em nhiều nhé, may mà có em nhắc chứ chị cứ uống bừa bãi thế này chắc hỏng hết dạ dày mất. Đây, chị gửi em 50.000 đồng, chị về ăn chút gì rồi uống thuốc ngay đây.",
+      "trust": 90,
+      "patience": 95,
+      "stress": 15,
+      "hidden_unlocked": true,
+      "agent_conversation_end": true,
+      "tester_signalled_end": true
+    }
+  ],
+  "evaluation": {
+    "out_of_character": false,
+    "emotion_logic_score": 9,
+    "unlock_turn": 1,
+    "critique": "Nhân vật Đỗ Hải Yến được thể hiện rất tốt, đúng với tính cách cởi mở và có phần hơi lan man của một tiểu thương. Việc tiết lộ bí mật (đã uống thuốc 5 ngày và có tiền sử đau dạ dày) diễn ra tự nhiên ở lượt 1 khi dược sĩ đặt câu hỏi khai thác tiền sử bệnh, phù hợp với tâm lý muốn tìm kiếm sự đồng cảm và tư vấn. Sự chuyển biến cảm xúc từ lo lắng sang tin tưởng sau khi được dược sĩ tư vấn đúng trọng tâm rất logic. Nhân vật không gây khó dễ, tuân thủ mục tiêu mua thuốc nhanh nhưng vẫn đảm bảo tính chân thực của một bệnh nhân có vấn đề sức khỏe tiềm ẩn."
+  }
+}
